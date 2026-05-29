@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Échiquier d'animation — Échecs et Mad</title>
+<style>
+  :root{
+    --paper:#f4efe6;
+    --paper-2:#efe7d8;
+    --ink:#211c16;
+    --ink-soft:#5a5043;
+    --line:#d8cdb8;
+    --sq-light:#f0d9b5;
+    --sq-dark:#b58863;
+    --accent:#7a5230;
+    --green:#22a722;
+    --red:#e23636;
+    --blue:#3b7ddd;
+    --shadow:0 10px 30px -12px rgba(33,28,22,.35);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:ui-sans-serif,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--sans);
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #fbf7ee 0%, rgba(251,247,238,0) 60%),
+      linear-gradient(180deg,#f6f1e8 0%, #efe7d8 100%);
+    min-height:100vh;
+    padding:18px 16px 40px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
+  header{width:100%;max-width:980px;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;border-bottom:1px solid var(--line);padding-bottom:10px;}
+  header h1{font-family:var(--serif);font-weight:600;font-size:clamp(20px,3.4vw,28px);letter-spacing:.2px;margin:0;}
+  header h1 .accent{color:var(--accent);font-style:italic;}
+  header .sub{font-size:13px;color:var(--ink-soft);}
+
+  .wrap{width:100%;max-width:980px;display:flex;flex-direction:column;align-items:center;gap:12px;}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;width:100%;}
+  button.btn{
+    font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--ink);
+    background:#fffaf0;border:1px solid var(--line);border-radius:10px;
+    padding:9px 13px;cursor:pointer;transition:transform .08s ease,box-shadow .15s ease,background .15s ease;
+    display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 0 rgba(0,0,0,.02);
+  }
+  button.btn:hover{background:#fff;box-shadow:0 4px 14px -8px rgba(33,28,22,.4);}
+  button.btn:active{transform:translateY(1px);}
+  button.btn.primary{background:var(--ink);color:#f6f1e8;border-color:var(--ink);}
+  button.btn.primary:hover{background:#332b22;}
+  .btn svg{width:16px;height:16px;display:block;}
+  .cp-label{font-size:13px;color:var(--ink-soft);align-self:center;}
+  .colorpick{display:inline-flex;gap:6px;align-items:center;padding:7px 9px;background:#fffaf0;border:1px solid var(--line);border-radius:10px;}
+  .chip{width:22px;height:22px;border-radius:6px;border:2px solid #fffaf0;outline:1px solid var(--line);cursor:pointer;padding:0;transition:transform .08s ease;}
+  .chip:active{transform:scale(.92);}
+  .chip.green{background:var(--green);} .chip.red{background:var(--red);} .chip.blue{background:var(--blue);}
+  .chip.active{outline:2px solid var(--ink);outline-offset:1px;}
+
+  /* ---------- Spare pieces ---------- */
+  .spare{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;}
+  .spare .piece-tile{
+    width:clamp(34px,7.6vmin,52px);height:clamp(34px,7.6vmin,52px);
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.5);border:1px solid var(--line);border-radius:9px;
+    cursor:grab;user-select:none;touch-action:none;transition:background .12s ease,transform .08s ease;
+  }
+  .spare .piece-tile:hover{background:#fff;}
+  .spare .piece-tile:active{cursor:grabbing;transform:scale(.96);}
+  .spare .piece-tile .g{font-size:clamp(26px,5.6vmin,40px);line-height:1;}
+
+  /* ---------- Board ---------- */
+  .board-shell{
+    position:relative;width:min(86vmin,560px);
+    padding:14px;background:linear-gradient(160deg,#fffaf0,#f3ead9);
+    border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);
+  }
+  .board-shell::after{content:"";position:absolute;inset:6px;border:1px solid rgba(122,82,48,.18);border-radius:11px;pointer-events:none;}
+  .board{
+    position:relative;width:100%;aspect-ratio:1/1;border-radius:6px;overflow:hidden;
+    container-type:inline-size;container-name:board;touch-action:none;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);
+  }
+  .layer{position:absolute;inset:0;width:100%;height:100%;}
+  .squares{z-index:0;}
+  .hl-layer{z-index:1;pointer-events:none;}
+  .pieces{z-index:2;}
+  .arrow-layer{z-index:3;pointer-events:none;}
+
+  .sq{position:absolute;width:12.5%;height:12.5%;}
+  .sq.light{background:var(--sq-light);}
+  .sq.dark{background:var(--sq-dark);}
+  .sq .coord{position:absolute;font-size:2.5cqi;font-weight:700;opacity:.7;font-family:var(--sans);}
+  .sq .coord.file{right:.5cqi;bottom:.2cqi;}
+  .sq .coord.rank{left:.6cqi;top:.2cqi;}
+  .sq.light .coord{color:#b58863;}
+  .sq.dark .coord{color:#f0d9b5;}
+
+  .piece{
+    position:absolute;width:12.5%;height:12.5%;display:flex;align-items:center;justify-content:center;
+    cursor:grab;touch-action:none;filter:drop-shadow(0 .45cqi .35cqi rgba(0,0,0,.28));
+  }
+  .piece:active{cursor:grabbing;}
+  .piece .g{font-size:9.4cqi;line-height:1;user-select:none;}
+  .piece.w .g{color:#fafafa;-webkit-text-stroke:.24cqi #3a3a3a;}
+  .piece.b .g{color:#2a2a2a;-webkit-text-stroke:.18cqi #0a0a0a;}
+  .piece img{width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;}
+
+  .ghost{position:fixed;z-index:9999;pointer-events:none;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));opacity:.95;}
+  .ghost .g{line-height:1;}
+  .ghost.w .g{color:#fafafa;-webkit-text-stroke:2px #3a3a3a;}
+  .ghost.b .g{color:#2a2a2a;-webkit-text-stroke:1.5px #0a0a0a;}
+  .ghost img{width:100%;height:100%;object-fit:contain;}
+
+  /* ---------- Custom images ---------- */
+  .custom{width:100%;max-width:560px;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:12px;padding:12px 13px;}
+  .custom .head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;}
+  .custom .head .t{font-family:var(--serif);font-size:15px;font-weight:600;}
+  .custom .head .hint{font-size:12px;color:var(--ink-soft);}
+  .tray{display:flex;flex-wrap:wrap;gap:9px;align-items:center;min-height:46px;}
+  .tray .empty{font-size:12.5px;color:var(--ink-soft);font-style:italic;}
+  .tray .custom-tile{position:relative;width:54px;height:54px;border:1px solid var(--line);border-radius:10px;background:#fff center/contain no-repeat;cursor:grab;touch-action:none;box-shadow:0 1px 4px -2px rgba(0,0,0,.3);}
+  .tray .custom-tile:active{cursor:grabbing;}
+  .tray .custom-tile .x{position:absolute;top:-7px;right:-7px;width:19px;height:19px;border-radius:50%;background:var(--ink);color:#fff;border:none;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+  .tray .custom-tile .x:hover{background:var(--red);}
+
+  /* ---------- Legend ---------- */
+  .legend{width:100%;max-width:980px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 18px;font-size:13px;color:var(--ink-soft);background:rgba(255,255,255,.4);border:1px solid var(--line);border-radius:12px;padding:13px 16px;}
+  .legend b{color:var(--ink);font-weight:600;}
+  .legend .row{display:flex;gap:8px;align-items:flex-start;line-height:1.4;}
+  .legend .dot{width:11px;height:11px;border-radius:3px;flex:0 0 auto;margin-top:3px;}
+  .dot.green{background:var(--green);} .dot.red{background:var(--red);} .dot.blue{background:var(--blue);}
+  kbd{font-family:var(--sans);font-size:11.5px;background:#fffaf0;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink);}
+
+  /* ---------- FEN ---------- */
+  .fen{width:100%;max-width:560px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px;}
+  .fen label{font-weight:600;color:var(--ink);}
+  .fen input{flex:1;min-width:200px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fffaf0;color:var(--ink);}
+  .fen select{font-size:12.5px;padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#fffaf0;color:var(--ink);font-family:var(--sans);}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#f6f1e8;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:10000;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<header>
+  <h1>Échiquier d'<span class="accent">animation</span></h1>
+  <div class="sub">Échecs&nbsp;et&nbsp;Mad · support pédagogique</div>
+</header>
+
+<div class="wrap">
+
+  <div class="toolbar">
+    <button class="btn primary" id="btnStart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+      Position de départ
+    </button>
+    <button class="btn" id="btnClear">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+      Vider l'échiquier
+    </button>
+    <button class="btn" id="btnFlip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+      Tourner
+    </button>
+    <button class="btn" id="btnAnnos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
+      Effacer les annotations
+    </button>
+    <button class="btn" id="btnUpload">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+      Charger des images
+    </button>
+    <input type="file" id="fileInput" accept="image/*" multiple hidden>
+    <span class="cp-label">Couleur</span>
+    <div class="colorpick" id="colorPick" title="Couleur des flèches et surbrillances">
+      <button class="chip green active" data-color="green" aria-label="Vert"></button>
+      <button class="chip red" data-color="red" aria-label="Rouge"></button>
+      <button class="chip blue" data-color="blue" aria-label="Bleu"></button>
+    </div>
+  </div>
+
+  <div class="spare" id="spareTop"></div>
+
+  <div class="board-shell">
+    <div class="board" id="board">
+      <div class="layer squares" id="squares"></div>
+      <svg class="layer hl-layer" id="hlLayer" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
+      <div class="layer pieces" id="pieces"></div>
+      <svg class="layer arrow-layer" id="arrowLayer" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
+    </div>
+  </div>
+
+  <div class="spare" id="spareBottom"></div>
+
+  <div class="custom">
+    <div class="head">
+      <span class="t">Images personnalisées</span>
+      <span class="hint">Glissez une vignette sur l'échiquier — elle remplace une pièce.</span>
+    </div>
+    <div class="tray" id="tray"></div>
+  </div>
+
+  <div class="fen">
+    <label for="fenInput">FEN</label>
+    <select id="sideToMove" title="Trait">
+      <option value="w">Trait aux Blancs</option>
+      <option value="b">Trait aux Noirs</option>
+    </select>
+    <input type="text" id="fenInput" spellcheck="false" placeholder="Collez une position FEN…">
+    <button class="btn" id="btnLoadFen">Charger</button>
+  </div>
+
+  <div class="legend">
+    <div class="row"><span class="dot" style="background:var(--ink)"></span><span><b>Pièces&nbsp;:</b> glissez depuis les réserves vers l'échiquier. Déplacez en glissant. <b>Supprimez</b> en glissant hors de l'échiquier.</span></div>
+    <div class="row"><span class="dot green"></span><span><b>Flèches (souris)&nbsp;:</b> clic droit <b>maintenu</b> d'une case vers une autre.</span></div>
+    <div class="row"><span class="dot red"></span><span><b>Surbrillance (souris)&nbsp;:</b> clic droit sur une case.</span></div>
+    <div class="row"><span class="dot blue"></span><span><b>Couleurs&nbsp;:</b> sélecteur en haut · à la souris <kbd>Ctrl</kbd>&nbsp;=&nbsp;rouge, <kbd>Alt</kbd>&nbsp;=&nbsp;bleu (priment).</span></div>
+    <div class="row"><span class="dot" style="background:var(--accent)"></span><span><b>Écran tactile&nbsp;:</b> un doigt déplace les pièces ; <b>deux doigts</b> dessinent (un doigt pose la case de départ, l'autre va à l'arrivée — relâché sur la même case&nbsp;= surbrillance).</span></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const FILES = ["a","b","c","d","e","f","g","h"];
+  const GLYPH = {K:"♚",Q:"♛",R:"♜",B:"♝",N:"♞",P:"♟"};
+  const COLOR = {green:"var(--green)",red:"var(--red)",blue:"var(--blue)"};
+  const HEX   = {green:"#22a722",red:"#e23636",blue:"#3b7ddd"};
+  const STORE_KEY = "echecs-mad-custom-v1";
+
+  const boardEl  = document.getElementById("board");
+  const sqLayer  = document.getElementById("squares");
+  const pcLayer  = document.getElementById("pieces");
+  const hlLayer  = document.getElementById("hlLayer");
+  const arLayer  = document.getElementById("arrowLayer");
+  const trayEl   = document.getElementById("tray");
+  const toastEl  = document.getElementById("toast");
+
+  // ---- State ----
+  let model = {};            // square -> {kind:"std",code:"wR"} | {kind:"img",src:"..."}
+  let orientation = "white";
+  let shapes = [];           // {type:"arrow",from,to,color} | {type:"hl",square,color}
+  let custom = [];           // {id, src}
+  let sideToMove = "w";
+
+  // ---- Coordinate helpers ----
+  function sqToRC(square){
+    const f = FILES.indexOf(square[0]);
+    const r = 8 - Number(square[1]);          // rank 8 -> row 0
+    return orientation === "white" ? {row:r, col:f} : {row:7-r, col:7-f};
+  }
+  function rcToSq(row,col){
+    let f, r;
+    if(orientation === "white"){ f = col; r = row; }
+    else { f = 7-col; r = 7-row; }
+    return FILES[f] + String(8 - r);
+  }
+  function center(square){ const p = sqToRC(square); return {x:p.col+0.5, y:p.row+0.5}; }
+
+  // ---- Render squares + coordinates ----
+  function renderSquares(){
+    sqLayer.innerHTML = "";
+    for(let row=0; row<8; row++){
+      for(let col=0; col<8; col++){
+        const d = document.createElement("div");
+        d.className = "sq " + ((row+col)%2 ? "dark" : "light");
+        d.style.left = (col*12.5)+"%";
+        d.style.top  = (row*12.5)+"%";
+        const sq = rcToSq(row,col);
+        if(col === 0){
+          const r = document.createElement("span");
+          r.className = "coord rank"; r.textContent = sq[1];
+          d.appendChild(r);
+        }
+        if(row === 7){
+          const f = document.createElement("span");
+          f.className = "coord file"; f.textContent = sq[0];
+          d.appendChild(f);
+        }
+        sqLayer.appendChild(d);
+      }
+    }
+  }
+
+  // ---- Render pieces ----
+  function pieceInner(piece, sizePx){
+    if(piece.kind === "std"){
+      const span = document.createElement("span");
+      span.className = "g";
+      span.textContent = GLYPH[piece.code[1]];
+      return {node:span, colorClass: piece.code[0] === "w" ? "w" : "b"};
+    } else {
+      const img = document.createElement("img");
+      img.src = piece.src; img.draggable = false; img.alt = "";
+      return {node:img, colorClass:""};
+    }
+  }
+  function renderPieces(){
+    pcLayer.innerHTML = "";
+    for(const sq in model){
+      const piece = model[sq];
+      const p = sqToRC(sq);
+      const el = document.createElement("div");
+      el.className = "piece";
+      const inner = pieceInner(piece);
+      if(inner.colorClass) el.classList.add(inner.colorClass);
+      el.style.left = (p.col*12.5)+"%";
+      el.style.top  = (p.row*12.5)+"%";
+      el.dataset.square = sq;
+      el.appendChild(inner.node);
+      pcLayer.appendChild(el);
+    }
+    updateFen();
+  }
+
+  // ---- Render shapes (highlights + arrows + preview) ----
+  function renderShapes(preview){
+    // highlights
+    let hl = "";
+    const allHl = shapes.filter(s=>s.type==="hl");
+    if(preview && preview.type==="hl") allHl.push(preview);
+    for(const s of allHl){
+      const p = sqToRC(s.square);
+      hl += `<rect x="${p.col+0.04}" y="${p.row+0.04}" width="0.92" height="0.92" rx="0.1" fill="${HEX[s.color]}" fill-opacity="0.5"/>`;
+    }
+    hlLayer.innerHTML = hl;
+
+    // arrows — drawn as a single filled shape so the tip sits exactly at the end
+    let ar = "";
+    const allAr = shapes.filter(s=>s.type==="arrow");
+    if(preview && preview.type==="arrow") allAr.push(preview);
+    const START_GAP=0.30, TIP_GAP=0.08, SHAFT=0.075, HEAD_W=0.24, HEAD_L=0.36;
+    for(const s of allAr){
+      const a = center(s.from), b = center(s.to);
+      const dx = b.x-a.x, dy = b.y-a.y, len = Math.hypot(dx,dy) || 1;
+      const ux = dx/len, uy = dy/len, px = -uy, py = ux;
+      const tip  = {x:b.x - ux*TIP_GAP, y:b.y - uy*TIP_GAP};
+      const back = {x:tip.x - ux*HEAD_L, y:tip.y - uy*HEAD_L};
+      let start  = {x:a.x + ux*START_GAP, y:a.y + uy*START_GAP};
+      const along = (back.x-start.x)*ux + (back.y-start.y)*uy;
+      if(along < 0.02){ start = {x:back.x - ux*0.02, y:back.y - uy*0.02}; }
+      const pts = [
+        [start.x+px*SHAFT,  start.y+py*SHAFT],
+        [back.x +px*SHAFT,  back.y +py*SHAFT],
+        [back.x +px*HEAD_W, back.y +py*HEAD_W],
+        [tip.x, tip.y],
+        [back.x -px*HEAD_W, back.y -py*HEAD_W],
+        [back.x -px*SHAFT,  back.y -py*SHAFT],
+        [start.x-px*SHAFT,  start.y-py*SHAFT]
+      ].map(p=>p[0].toFixed(3)+","+p[1].toFixed(3)).join(" ");
+      ar += `<polygon points="${pts}" fill="${HEX[s.color]}" fill-opacity="0.9" stroke="${HEX[s.color]}" stroke-width="0.03" stroke-linejoin="round"/>`;
+    }
+    arLayer.innerHTML = ar;
+  }
+
+  function fullRender(){ renderSquares(); renderPieces(); renderShapes(); }
+
+  // ---- Shape toggling ----
+  function toggleArrow(from,to,color){
+    const i = shapes.findIndex(s=>s.type==="arrow" && s.from===from && s.to===to);
+    if(i>=0){ if(shapes[i].color===color) shapes.splice(i,1); else shapes[i].color=color; }
+    else shapes.push({type:"arrow",from,to,color});
+  }
+  function toggleHl(square,color){
+    const i = shapes.findIndex(s=>s.type==="hl" && s.square===square);
+    if(i>=0){ if(shapes[i].color===color) shapes.splice(i,1); else shapes[i].color=color; }
+    else shapes.push({type:"hl",square,color});
+  }
+
+  // ---- Geometry: pointer -> square ----
+  function squareFromPoint(cx, cy){
+    const r = boardEl.getBoundingClientRect();
+    const x = cx - r.left, y = cy - r.top;
+    if(x < 0 || y < 0 || x > r.width || y > r.height) return null;
+    const col = Math.max(0, Math.min(7, Math.floor(x / (r.width/8))));
+    const row = Math.max(0, Math.min(7, Math.floor(y / (r.height/8))));
+    return rcToSq(row, col);
+  }
+  function squareFromEvent(e){ return squareFromPoint(e.clientX, e.clientY); }
+
+  // Selected annotation colour: used on touch, and on mouse when no modifier is held.
+  let currentColor = "green";
+  function colorFromMods(e){
+    if(e.ctrlKey || e.metaKey) return "red";
+    if(e.altKey) return "blue";
+    return currentColor;
+  }
+
+  // ---- Drag (pieces) + draw (arrows), unified pointer handling ----
+  let active = null;   // {kind:"piece"|"arrow", ...}
+  let ghost = null;
+
+  function squarePx(){ return boardEl.getBoundingClientRect().width/8; }
+
+  function makeGhost(piece){
+    const size = squarePx();
+    const g = document.createElement("div");
+    g.className = "ghost";
+    g.style.width = size+"px"; g.style.height = size+"px";
+    if(piece.kind === "std"){
+      g.classList.add(piece.code[0]==="w" ? "w":"b");
+      const s = document.createElement("span");
+      s.className = "g"; s.textContent = GLYPH[piece.code[1]];
+      s.style.fontSize = (size*0.78)+"px";
+      g.appendChild(s);
+    } else {
+      const img = document.createElement("img"); img.src = piece.src; img.alt="";
+      g.appendChild(img);
+    }
+    document.body.appendChild(g);
+    ghost = g;
+  }
+  function moveGhost(e){
+    if(!ghost) return;
+    const size = ghost.offsetWidth;
+    ghost.style.left = (e.clientX - size/2)+"px";
+    ghost.style.top  = (e.clientY - size/2)+"px";
+  }
+  function killGhost(){ if(ghost){ ghost.remove(); ghost=null; } }
+
+  function beginPieceDrag(piece, origin, e, captureEl){
+    active = {kind:"piece", piece, origin, pointerId:e.pointerId};
+    makeGhost(piece);
+    moveGhost(e);
+    try{ captureEl.setPointerCapture(e.pointerId); }catch(_){}
+    e.preventDefault();
+  }
+
+  // ---- Touch state: two fingers = annotation gesture, one finger = piece ----
+  const touchPts = new Map();   // currently active touch pointers
+  let pending = null;           // first touch, decision deferred (piece vs. arrow)
+  function clearAnnotations(){ shapes = []; renderShapes(); }
+
+  function startTouchArrow(anchorSq, penId, e){
+    active = {kind:"arrow", from:anchorSq, to:anchorSq, touch:true, penId, color:currentColor};
+    renderShapes({type:"hl", square:anchorSq, color:currentColor});
+    e.preventDefault();
+  }
+
+  boardEl.addEventListener("contextmenu", e=>e.preventDefault());
+
+  boardEl.addEventListener("pointerdown", function(e){
+    // ===================== TOUCH =====================
+    if(e.pointerType === "touch"){
+      if(active && active.kind === "piece" && active.origin === "palette") return; // palette drag in progress
+      touchPts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+      if(touchPts.size >= 2){                       // second finger -> annotation mode
+        if(!(active && active.kind === "arrow" && active.touch)){
+          let anchorSq = null;
+          if(active && active.kind === "piece"){      // abort a just-started piece drag
+            if(active.origin !== "palette") model[active.origin] = active.piece;
+            killGhost(); renderPieces();
+            anchorSq = active.origin; active = null;
+          }
+          if(!anchorSq && pending) anchorSq = pending.startSq;
+          if(!anchorSq){
+            for(const [id,pt] of touchPts){ if(id !== e.pointerId){ anchorSq = squareFromPoint(pt.x, pt.y); break; } }
+          }
+          pending = null;
+          if(anchorSq) startTouchArrow(anchorSq, e.pointerId, e);
+        }
+        try{ boardEl.setPointerCapture(e.pointerId); }catch(_){}
+        return;
+      }
+
+      // first finger -> defer (a real move = piece drag; a 2nd finger = arrow)
+      const sq = squareFromEvent(e);
+      if(sq === null) return;
+      pending = {id:e.pointerId, startSq:sq, x:e.clientX, y:e.clientY, piece: model[sq] || null, moved:false};
+      try{ boardEl.setPointerCapture(e.pointerId); }catch(_){}
+      e.preventDefault();
+      return;
+    }
+
+    // ===================== MOUSE / PEN =====================
+    if(active) return;
+    if(e.button === 2){                            // right -> annotation
+      const sq = squareFromEvent(e);
+      if(!sq) return;
+      active = {kind:"arrow", from:sq, to:sq, pointerId:e.pointerId, color:colorFromMods(e)};
+      try{ boardEl.setPointerCapture(e.pointerId); }catch(_){}
+      renderShapes({type:"hl", square:sq, color:active.color});
+      e.preventDefault();
+      return;
+    }
+    if(e.button === 0){                            // left -> piece / clear annotations
+      const sq = squareFromEvent(e);
+      if(sq === null) return;
+      clearAnnotations();
+      if(model[sq]){
+        const piece = model[sq];
+        delete model[sq];
+        renderPieces();
+        beginPieceDrag(piece, sq, e, boardEl);
+      }
+    }
+  });
+
+  window.addEventListener("pointermove", function(e){
+    if(touchPts.has(e.pointerId)) touchPts.set(e.pointerId, {x:e.clientX, y:e.clientY});
+
+    // touch arrow: the "pen" finger sets the destination
+    if(active && active.kind === "arrow" && active.touch){
+      if(e.pointerId === active.penId){
+        const sq = squareFromEvent(e) || active.to;
+        active.to = sq;
+        const prev = (sq === active.from)
+          ? {type:"hl", square:active.from, color:active.color}
+          : {type:"arrow", from:active.from, to:sq, color:active.color};
+        renderShapes(prev);
+      }
+      return;
+    }
+
+    // deferred first finger: a real move turns it into a piece drag
+    if(pending && e.pointerId === pending.id && !active){
+      const dist = Math.hypot(e.clientX - pending.x, e.clientY - pending.y);
+      if(dist > 7){
+        if(pending.piece){
+          clearAnnotations();
+          const piece = pending.piece, origin = pending.startSq;
+          delete model[origin]; renderPieces();
+          active = {kind:"piece", piece, origin, pointerId:pending.id};
+          makeGhost(piece); moveGhost(e);
+          pending = null;
+        } else {
+          pending.moved = true;   // dragging an empty square -> no piece to lift
+        }
+      }
+      return;
+    }
+
+    if(!active || e.pointerId !== active.pointerId) return;
+    if(active.kind === "piece"){
+      moveGhost(e);
+    } else if(active.kind === "arrow"){       // mouse arrow preview
+      const sq = squareFromEvent(e) || active.from;
+      active.to = sq;
+      active.color = colorFromMods(e);
+      const prev = (sq === active.from)
+        ? {type:"hl", square:active.from, color:active.color}
+        : {type:"arrow", from:active.from, to:sq, color:active.color};
+      renderShapes(prev);
+    }
+  });
+
+  window.addEventListener("pointerup", function(e){
+    if(e.pointerType === "touch") touchPts.delete(e.pointerId);
+
+    // touch arrow: finalize as soon as one of its fingers lifts
+    if(active && active.kind === "arrow" && active.touch){
+      const to = active.to || active.from;
+      if(to === active.from) toggleHl(active.from, active.color);
+      else toggleArrow(active.from, to, active.color);
+      renderShapes();
+      active = null; pending = null;
+      try{ boardEl.releasePointerCapture(e.pointerId); }catch(_){}
+      return;
+    }
+
+    // deferred first finger lifted with no move and no 2nd finger -> tap clears annotations
+    if(pending && e.pointerId === pending.id && !active){
+      if(!pending.moved) clearAnnotations();
+      pending = null;
+      try{ boardEl.releasePointerCapture(e.pointerId); }catch(_){}
+      return;
+    }
+
+    if(!active || e.pointerId !== active.pointerId) return;
+    if(active.kind === "piece"){
+      const sq = squareFromEvent(e);
+      if(sq){ model[sq] = active.piece; }     // drop; off-board -> discarded
+      killGhost(); renderPieces();
+    } else if(active.kind === "arrow"){        // mouse arrow
+      const to = squareFromEvent(e) || active.from;
+      const color = colorFromMods(e);
+      if(to === active.from) toggleHl(active.from, color);
+      else toggleArrow(active.from, to, color);
+      renderShapes();
+    }
+    try{ boardEl.releasePointerCapture(e.pointerId); }catch(_){}
+    active = null; pending = null;
+  });
+  window.addEventListener("pointercancel", function(e){
+    if(e.pointerType === "touch") touchPts.delete(e.pointerId);
+    if(active && active.kind === "piece" && e.pointerId === active.pointerId){
+      if(active.origin !== "palette") model[active.origin] = active.piece;
+      killGhost(); renderPieces(); active = null;
+    } else if(active && active.kind === "arrow"){
+      renderShapes(); active = null;
+    }
+    pending = null;
+  });
+
+  // ---- Spare pieces ----
+  function buildSpare(el, color){
+    el.innerHTML = "";
+    ["K","Q","R","B","N","P"].forEach(t=>{
+      const tile = document.createElement("div");
+      tile.className = "piece-tile";
+      const g = document.createElement("span");
+      g.className = "g";
+      g.textContent = GLYPH[t];
+      g.style.color = color==="w" ? "#fafafa" : "#2a2a2a";
+      g.style.webkitTextStroke = color==="w" ? "1.5px #3a3a3a" : "1px #0a0a0a";
+      tile.appendChild(g);
+      tile.addEventListener("pointerdown", e=>{
+        if(e.button !== 0 || active) return;
+        beginPieceDrag({kind:"std", code: color+t}, "palette", e, tile);
+      });
+      el.appendChild(tile);
+    });
+  }
+  buildSpare(document.getElementById("spareTop"), "b");
+  buildSpare(document.getElementById("spareBottom"), "w");
+
+  // ---- Custom images ----
+  function renderTray(){
+    trayEl.innerHTML = "";
+    if(custom.length === 0){
+      const e = document.createElement("span");
+      e.className = "empty";
+      e.textContent = "Aucune image — cliquez sur « Charger des images ».";
+      trayEl.appendChild(e);
+      return;
+    }
+    custom.forEach(item=>{
+      const tile = document.createElement("div");
+      tile.className = "custom-tile";
+      tile.style.backgroundImage = `url("${item.src}")`;
+      const x = document.createElement("button");
+      x.className = "x"; x.textContent = "×"; x.title = "Retirer";
+      x.addEventListener("pointerdown", ev=>ev.stopPropagation());
+      x.addEventListener("click", ev=>{
+        ev.stopPropagation();
+        custom = custom.filter(c=>c.id !== item.id);
+        saveCustom(); renderTray();
+      });
+      tile.appendChild(x);
+      tile.addEventListener("pointerdown", e=>{
+        if(e.button !== 0 || active) return;
+        beginPieceDrag({kind:"img", src:item.src}, "palette", e, tile);
+      });
+      trayEl.appendChild(tile);
+    });
+  }
+  function saveCustom(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(custom)); }catch(_){}
+  }
+  function loadCustom(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw) custom = JSON.parse(raw) || [];
+    }catch(_){ custom = []; }
+  }
+
+  document.getElementById("btnUpload").addEventListener("click", ()=>document.getElementById("fileInput").click());
+  document.getElementById("fileInput").addEventListener("change", function(e){
+    const files = Array.from(e.target.files || []);
+    let pending = files.length;
+    if(!pending) return;
+    files.forEach(f=>{
+      const reader = new FileReader();
+      reader.onload = ev=>{
+        custom.push({id: "c"+Date.now()+Math.random().toString(36).slice(2,6), src: ev.target.result});
+        if(--pending === 0){ saveCustom(); renderTray(); toast("Image(s) ajoutée(s)"); }
+      };
+      reader.onerror = ()=>{ if(--pending===0){ saveCustom(); renderTray(); } };
+      reader.readAsDataURL(f);
+    });
+    e.target.value = "";
+  });
+
+  // ---- Toolbar ----
+  function startPosition(){
+    model = {};
+    const back = ["R","N","B","Q","K","B","N","R"];
+    FILES.forEach((f,i)=>{
+      model[f+"8"] = {kind:"std", code:"b"+back[i]};
+      model[f+"7"] = {kind:"std", code:"bP"};
+      model[f+"2"] = {kind:"std", code:"wP"};
+      model[f+"1"] = {kind:"std", code:"w"+back[i]};
+    });
+    shapes = []; sideToMove = "w"; document.getElementById("sideToMove").value = "w";
+    fullRender();
+  }
+  document.getElementById("btnStart").addEventListener("click", startPosition);
+  document.getElementById("btnClear").addEventListener("click", ()=>{ model = {}; shapes = []; fullRender(); });
+  document.getElementById("btnFlip").addEventListener("click", ()=>{ orientation = orientation==="white" ? "black":"white"; fullRender(); });
+  document.getElementById("btnAnnos").addEventListener("click", ()=>{ shapes = []; renderShapes(); });
+
+  // Colour selector (drives touch annotations; mouse modifiers Ctrl/Alt still override)
+  const colorPick = document.getElementById("colorPick");
+  colorPick.addEventListener("click", e=>{
+    const b = e.target.closest(".chip"); if(!b) return;
+    currentColor = b.dataset.color;
+    colorPick.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active", c===b));
+  });
+
+  // ---- FEN ----
+  const fenInput = document.getElementById("fenInput");
+  const sideSel  = document.getElementById("sideToMove");
+  sideSel.addEventListener("change", ()=>{ sideToMove = sideSel.value; updateFen(); });
+
+  function updateFen(){
+    let rows = [];
+    for(let rank=8; rank>=1; rank--){
+      let row = "", empty = 0;
+      for(let i=0;i<8;i++){
+        const sq = FILES[i]+rank;
+        const p = model[sq];
+        if(p && p.kind === "std"){
+          if(empty){ row += empty; empty = 0; }
+          row += p.code[0]==="w" ? p.code[1] : p.code[1].toLowerCase();
+        } else { empty++; }   // custom images are not encodable in FEN
+      }
+      if(empty) row += empty;
+      rows.push(row);
+    }
+    fenInput.value = rows.join("/") + " " + sideToMove + " - - 0 1";
+  }
+  function loadFen(str){
+    try{
+      const placement = str.trim().split(/\s+/)[0];
+      const parts = placement.split("/");
+      if(parts.length !== 8) throw 0;
+      const next = {};
+      const map = {k:"K",q:"Q",r:"R",b:"B",n:"N",p:"P"};
+      for(let r=0;r<8;r++){
+        let col = 0;
+        for(const ch of parts[r]){
+          if(/\d/.test(ch)){ col += Number(ch); }
+          else {
+            const upper = ch.toUpperCase();
+            if(!map[ch.toLowerCase()]) throw 0;
+            const code = (ch === upper ? "w" : "b") + map[ch.toLowerCase()];
+            next[FILES[col] + String(8-r)] = {kind:"std", code};
+            col++;
+          }
+        }
+        if(col !== 8) throw 0;
+      }
+      model = next; shapes = [];
+      const tok = str.trim().split(/\s+/)[1];
+      if(tok === "w" || tok === "b"){ sideToMove = tok; sideSel.value = tok; }
+      fullRender();
+      toast("Position chargée");
+    }catch(_){ toast("FEN invalide", true); }
+  }
+  document.getElementById("btnLoadFen").addEventListener("click", ()=>loadFen(fenInput.value));
+  fenInput.addEventListener("keydown", e=>{ if(e.key==="Enter") loadFen(fenInput.value); });
+
+  // ---- Toast ----
+  let toastTimer = null;
+  function toast(msg, isErr){
+    toastEl.textContent = msg;
+    toastEl.style.background = isErr ? "var(--red)" : "var(--ink)";
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>toastEl.classList.remove("show"), 1800);
+  }
+
+  // ---- Init ----
+  loadCustom();
+  renderTray();
+  startPosition();
+})();
+</script>
+</body>
+</html>
