@@ -200,8 +200,16 @@
 
   <div class="custom">
     <div class="head">
-      <span class="t">Images personnalisées</span>
-      <span class="hint">Glissez une vignette sur l'échiquier — elle remplace une pièce.</span>
+      <span class="t">Pièces du projet</span>
+      <span class="hint">Stockées dans le dépôt — disponibles sur tous vos appareils.</span>
+    </div>
+    <div class="tray" id="projectTray"></div>
+  </div>
+
+  <div class="custom">
+    <div class="head">
+      <span class="t">Images de cet appareil</span>
+      <span class="hint">Chargées via le bouton — visibles seulement sur ce navigateur.</span>
     </div>
     <div class="tray" id="tray"></div>
   </div>
@@ -237,6 +245,8 @@
   const COLOR = {green:"var(--green)",red:"var(--red)",blue:"var(--blue)"};
   const HEX   = {green:"#22a722",red:"#e23636",blue:"#3b7ddd"};
   const STORE_KEY = "echecs-mad-custom-v1";
+  const PIECES_DIR = "pieces";          // folder in the repo holding shared images
+  const PIECES_LIST = "pieces/list.txt"; // one image filename per line
 
   const boardEl  = document.getElementById("board");
   const sqLayer  = document.getElementById("squares");
@@ -244,6 +254,7 @@
   const hlLayer  = document.getElementById("hlLayer");
   const arLayer  = document.getElementById("arrowLayer");
   const trayEl   = document.getElementById("tray");
+  const projectTrayEl = document.getElementById("projectTray");
   const toastEl  = document.getElementById("toast");
 
   // ---- State ----
@@ -625,7 +636,43 @@
   buildSpare(document.getElementById("spareTop"), "b");
   buildSpare(document.getElementById("spareBottom"), "w");
 
-  // ---- Custom images ----
+  // ---- Project pieces (committed to the repo, available on every device) ----
+  function renderProjectTray(items){
+    projectTrayEl.innerHTML = "";
+    if(!items || items.length === 0){
+      const e = document.createElement("span");
+      e.className = "empty";
+      e.innerHTML = "Aucune pièce de projet. Ajoutez vos images dans le dossier <b>pieces/</b> du dépôt et listez leurs noms dans <b>pieces/list.txt</b>.";
+      projectTrayEl.appendChild(e);
+      return;
+    }
+    items.forEach(src=>{
+      const tile = document.createElement("div");
+      tile.className = "custom-tile";
+      tile.style.backgroundImage = `url("${src}")`;
+      tile.title = src.split("/").pop();
+      tile.addEventListener("pointerdown", e=>{
+        if(e.button !== 0 || active) return;
+        beginPieceDrag({kind:"img", src}, "palette", e, tile);
+      });
+      projectTrayEl.appendChild(tile);
+    });
+  }
+  async function loadProjectPieces(){
+    try{
+      const res = await fetch(PIECES_LIST + "?v=" + Date.now(), {cache:"no-store"});
+      if(!res.ok) throw 0;
+      const names = (await res.text())
+        .split(/\r?\n/)
+        .map(s=>s.trim())
+        .filter(s=>s && !s.startsWith("#"));
+      renderProjectTray(names.map(n=> n.includes("/") ? n : PIECES_DIR + "/" + n));
+    }catch(_){
+      renderProjectTray([]);   // file missing, or opened via file:// where fetch is blocked
+    }
+  }
+
+  // ---- Device images (this browser only, via localStorage) ----
   function renderTray(){
     trayEl.innerHTML = "";
     if(custom.length === 0){
@@ -668,15 +715,15 @@
   document.getElementById("btnUpload").addEventListener("click", ()=>document.getElementById("fileInput").click());
   document.getElementById("fileInput").addEventListener("change", function(e){
     const files = Array.from(e.target.files || []);
-    let pending = files.length;
-    if(!pending) return;
+    let remaining = files.length;
+    if(!remaining) return;
     files.forEach(f=>{
       const reader = new FileReader();
       reader.onload = ev=>{
         custom.push({id: "c"+Date.now()+Math.random().toString(36).slice(2,6), src: ev.target.result});
-        if(--pending === 0){ saveCustom(); renderTray(); toast("Image(s) ajoutée(s)"); }
+        if(--remaining === 0){ saveCustom(); renderTray(); toast("Image(s) ajoutée(s)"); }
       };
-      reader.onerror = ()=>{ if(--pending===0){ saveCustom(); renderTray(); } };
+      reader.onerror = ()=>{ if(--remaining===0){ saveCustom(); renderTray(); } };
       reader.readAsDataURL(f);
     });
     e.target.value = "";
@@ -774,6 +821,7 @@
   // ---- Init ----
   loadCustom();
   renderTray();
+  loadProjectPieces();
   startPosition();
 })();
 </script>
