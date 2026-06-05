@@ -8,3 +8,6 @@ Scar.png
 Banzaï.png
 Ed.png
 Pumba.png
+Loup.jpg
+Blanquette.jpg
+Berger.jpg
