@@ -11,3 +11,5 @@ Pumba.png
 Loup.jpg
 Blanquette.jpg
 Berger.jpg
+Chasseur.png
+Sanglier.png
