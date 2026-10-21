@@ -13,3 +13,5 @@ Blanquette.jpg
 Berger.jpg
 Chasseur.png
 Sanglier.png
+cheval.png
+jument.png
