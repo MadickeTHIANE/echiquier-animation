@@ -907,12 +907,6 @@
       font-weight: 600;
     }
 
-    .rules .src {
-      margin: 6px 0 0;
-      font-size: 12px;
-      font-style: italic;
-    }
-
     .piece img.std,
     .ghost img.std {
       width: 100%;
@@ -1476,7 +1470,7 @@
             "<b>Comptage :</b> après 6 déplacements sans prise (3 par camp), on additionne la valeur des pièces restantes : dame 9, tour 5, fou 3, cavalier 3.",
             "<b>Égalité :</b> les Noirs gagnent, car ils ont eu le désavantage de jouer en second."
           ],
-          source: "Valeur des pièces : « Animations ludiques autour du jeu d'échecs » v5 et Cahier Débutant 2 (La valeur des pièces)."
+          // Source (non affichée) : Valeur des pièces : « Animations ludiques autour du jeu d'échecs » v5 et Cahier Débutant 2 (La valeur des pièces).
         },
 
         loup: {
@@ -1502,7 +1496,7 @@
             "<b>Le loup</b> se déplace comme une dame. Il gagne s'il capture tous les moutons ou s'il les bloque.",
             "<b>En initiation,</b> les moutons ne capturent pas en diagonale (variante à choisir dans le menu)."
           ],
-          source: "Fiche animation n°1 « Le Loup et les Moutons », J. Cappon."
+          // Source (non affichée) : Fiche animation n°1 « Le Loup et les Moutons », J. Cappon.
         },
 
         sanglier: {
@@ -1528,7 +1522,7 @@
             "<b>Les chasseurs</b> gagnent s'ils capturent le sanglier.",
             "Partie sans roi, les pièces jouent normalement. <b>Progression :</b> un 3e chasseur en a8, puis un 4e en h8."
           ],
-          source: "Fiche animation n°2 « Les Chasseurs et le Sanglier », J. Cappon."
+          // Source (non affichée) : Fiche animation n°2 « Les Chasseurs et le Sanglier », J. Cappon.
         },
 
         dalton: {
@@ -1551,7 +1545,7 @@
             "<b>Lucky Luke</b> se déplace comme une tour. Il gagne s'il capture les quatre Dalton.",
             "<b>À faire émerger :</b> les pions isolés sont des faiblesses, les pions liés se défendent entre eux."
           ],
-          source: "Jeu de Madické Thiane, mémoire DAFFE « L'apprentissage par le jeu »."
+          // Source (non affichée) : Jeu de Madické Thiane, mémoire DAFFE « L'apprentissage par le jeu ».
         },
 
         jument: {
@@ -1882,8 +1876,7 @@
         $("skinWrap").classList.toggle("hidden", modeId === "free" || !!mode.placement);
 
         $("rulesBody").innerHTML = modeId === "free" ? "" :
-          "<ul>" + mode.rules.map(r => `<li>${r}</li>`).join("") + "</ul>" +
-          (mode.source ? `<p class="src">Source : ${mode.source}</p>` : "");
+          "<ul>" + mode.rules.map(r => `<li>${r}</li>`).join("") + "</ul>";
 
         try { localStorage.setItem(MODE_KEY, JSON.stringify({ id: modeId, v: variantIdx })); } catch (_) { }
       }
