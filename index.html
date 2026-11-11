@@ -800,6 +800,170 @@
       height: 88%;
       pointer-events: none;
     }
+
+    /* ---------- Jeu en ligne ---------- */
+    .net-btn.active {
+      border-color: var(--ink);
+    }
+
+    .net-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      display: inline-block;
+      background: #b9ad97;
+    }
+
+    .net-dot.on {
+      background: var(--green);
+    }
+
+    .net-dot.wait {
+      background: #e0a526;
+    }
+
+    .net-dot.off {
+      background: var(--red);
+    }
+
+    .netpanel {
+      width: 100%;
+      max-width: 560px;
+      background: #fffaf0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13.5px;
+    }
+
+    .net-title {
+      font-family: var(--serif);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .net-hint {
+      margin: 0;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+
+    .net-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .net-or {
+      color: var(--ink-soft);
+    }
+
+    .net-input {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      width: 96px;
+      text-align: center;
+      padding: 8px 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .net-input.link {
+      flex: 1;
+      min-width: 150px;
+      width: auto;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      text-align: left;
+    }
+
+    .net-share {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .net-qr {
+      width: 132px;
+      height: 132px;
+      flex: 0 0 auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    .net-qr svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .net-sharetext {
+      flex: 1;
+      min-width: 220px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .net-codebox {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      color: var(--ink-soft);
+    }
+
+    .net-codebox strong {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 30px;
+      letter-spacing: 6px;
+      color: var(--ink);
+    }
+
+    .net-side {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink-soft);
+    }
+
+    .net-side select {
+      font-family: var(--sans);
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .net-state {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .modebar select:disabled,
+    .modebar .check input:disabled {
+      opacity: .55;
+      cursor: default;
+    }
   </style>
 </head>
 
@@ -1127,6 +1291,7 @@
       let modeId = "free";
       let mode = MODES.free;
       let variant = null;
+      let variantIdx = 0;
       let game = null;           // null in free mode
       let history = [];          // snapshots for undo
       let refereeOn = true;
@@ -1137,6 +1302,19 @@
       const other = c => c === "w" ? "b" : "w";
       const refereed = () => !!(game && game.referee);
       const colorOf = p => (p && p.kind === "std") ? p.code[0] : null;
+
+      // ---- Extension points (jeu en ligne, bot…) : événements, verrous, lignes de statut ----
+      const listeners = {};
+      let muted = false;            // vrai pendant qu'un état venu d'ailleurs est appliqué
+      function on(ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); }
+      function emit(ev, detail) {
+        if (muted) return;
+        (listeners[ev] || []).forEach(fn => { try { fn(detail || {}); } catch (err) { console.error(err); } });
+      }
+      const guards = { play: [], control: [] };   // chaque verrou doit dire oui
+      const mayPlay = () => guards.play.every(g => g());
+      const mayControl = () => guards.control.every(g => g());
+      const statusExtras = [];      // fonctions qui renvoient une ligne de statut en plus (ou "")
 
       // ---- Coordinate helpers ----
       const fileIdx = sq => FILES.indexOf(sq[0]);
@@ -1310,6 +1488,7 @@
         } else return false;
         sel = null; selRes = null;
         refresh();
+        emit("change", { action: a });
         return true;
       }
 
@@ -1330,12 +1509,15 @@
         };
         if (game.referee && game.phase === "move") afterTurnChange();
         refresh();
+        emit("change");
       }
 
-      function setMode(id, variantIdx) {
+      // Installe un mode (taille, menus, règles affichées) sans toucher à la position.
+      function configureMode(id, vIdx) {
         modeId = MODES[id] ? id : "free";
         mode = MODES[modeId];
-        variant = mode.variants ? mode.variants[Math.min(variantIdx || 0, mode.variants.length - 1)] : null;
+        variant = mode.variants ? mode.variants[Math.min(vIdx || 0, mode.variants.length - 1)] : null;
+        variantIdx = variant ? mode.variants.indexOf(variant) : 0;
         N = mode.size;
         FILES = ALL_FILES.slice(0, N).split("");
         orientation = "white";
@@ -1360,11 +1542,32 @@
           "<ul>" + mode.rules.map(r => `<li>${r}</li>`).join("") + "</ul>" +
           (mode.source ? `<p class="src">Source : ${mode.source}</p>` : "");
 
-        try { localStorage.setItem(MODE_KEY, JSON.stringify({ id: modeId, v: mode.variants ? mode.variants.indexOf(variant) : 0 })); } catch (_) { }
+        try { localStorage.setItem(MODE_KEY, JSON.stringify({ id: modeId, v: variantIdx })); } catch (_) { }
+      }
 
+      function setMode(id, vIdx) {
+        configureMode(id, vIdx);
         if (modeId === "free") { game = null; history = []; sel = null; selRes = null; startPosition(); }
         else newGame();
       }
+
+      // État complet de la partie, pour l'envoyer ailleurs (jeu en ligne) ou le reprendre.
+      function exportState() {
+        return JSON.parse(JSON.stringify({ modeId, variantIdx, refereeOn, model, game, shapes, sideToMove }));
+      }
+      function importState(s) {
+        muted = true;
+        try {
+          if (s.modeId !== modeId || (s.variantIdx || 0) !== variantIdx) configureMode(s.modeId, s.variantIdx);
+          refereeOn = !!s.refereeOn; $("chkReferee").checked = refereeOn;
+          model = s.model || {}; game = s.game || null; shapes = s.shapes || [];
+          sideToMove = s.sideToMove === "b" ? "b" : "w"; $("sideToMove").value = sideToMove;
+          history = []; sel = null; selRes = null;
+          if (active && active.kind === "piece") { killGhost(); active = null; }
+          refresh();
+        } finally { muted = false; }
+      }
+      function setShapes(list) { shapes = Array.isArray(list) ? list : []; renderShapes(); }
 
       /* =====================================================================
          RENDERING
@@ -1498,8 +1701,10 @@
       function renderStatus() {
         if (!game) { statusEl.innerHTML = ""; return; }
         statusEl.classList.toggle("over", game.phase === "over");
+        const extras = statusExtras.map(f => f()).filter(Boolean);
         if (!game.referee) {
-          statusEl.innerHTML = `<span class="main">Déplacement libre</span><span class="meta">L'arbitrage est désactivé : placez et déplacez les pièces comme vous voulez.</span>`;
+          statusEl.innerHTML = `<span class="main">Déplacement libre</span><span class="meta">L'arbitrage est désactivé : placez et déplacez les pièces comme vous voulez.</span>` +
+            extras.map(m => `<span class="meta">${m}</span>`).join("");
           return;
         }
         const dot = c => `<span class="side ${c}"></span>`;
@@ -1517,6 +1722,7 @@
         }
         if (mode.scoring && game.phase !== "place") meta.push(`Points : Blancs ${points("w")} · Noirs ${points("b")}`);
         if (game.note) meta.push(game.note);
+        meta.push(...extras);
         statusEl.innerHTML = `<span class="main">${main}</span>` + meta.map(m => `<span class="meta">${m}</span>`).join("");
       }
 
@@ -1541,7 +1747,7 @@
               if (selRes && selRes.color === color && selRes.type === t) tile.classList.add("sel");
             }
             tile.addEventListener("pointerdown", e => {
-              if (e.button !== 0 || active) return;
+              if (e.button !== 0 || active || !mayPlay()) return;
               if (placing) {
                 if (color !== game.turn) return;
                 selRes = { color, type: t }; sel = null;
@@ -1563,7 +1769,10 @@
         document.querySelectorAll(".gameOnly").forEach(e => e.classList.toggle("hidden", free));
         document.querySelectorAll(".looseOnly").forEach(e => e.classList.toggle("hidden", ref));
         document.querySelectorAll(".refOnly").forEach(e => e.classList.toggle("hidden", !ref));
-        $("btnUndo").disabled = !ref || history.length === 0;
+        const ctl = mayControl();     // faux pour l'invité d'une partie en ligne
+        [modeSel, variantSel, $("chkReferee"), $("btnNew"), $("btnStart"), $("btnClear"), $("btnLoadFen")]
+          .forEach(el => { el.disabled = !ctl; });
+        $("btnUndo").disabled = !ctl || !ref || history.length === 0;
         $("btnUndo").classList.toggle("hidden", free || !ref);
       }
 
@@ -1634,7 +1843,7 @@
 
       function canLift(sq) {
         const p = model[sq];
-        if (!p) return false;
+        if (!p || !mayPlay()) return false;
         if (!refereed()) return true;
         return game.phase === "move" && colorOf(p) === game.turn;
       }
@@ -1653,6 +1862,7 @@
         if (!refereed()) {
           if (sq) model[sq] = a.piece;                 // free play: off-board = removed
           renderPieces();
+          emit("change");
           return;
         }
         if (a.origin === "palette") {
@@ -1669,7 +1879,7 @@
       }
       // A plain click/tap on a square in a refereed game. Returns true if it played something.
       function boardTap(sq) {
-        if (!refereed() || game.phase === "over") return false;
+        if (!refereed() || game.phase === "over" || !mayPlay()) return false;
         if (game.phase === "place") {
           if (selRes && !model[sq]) return doAction({ t: "place", type: selRes.type, to: sq });
           return false;
@@ -1685,7 +1895,11 @@
       // ---- Touch state: two fingers = annotation gesture, one finger = piece ----
       const touchPts = new Map();
       let pending = null;           // first touch, decision deferred (piece vs. arrow)
-      function clearAnnotations() { shapes = []; renderShapes(); }
+      function clearAnnotations() {
+        const had = shapes.length > 0;
+        shapes = []; renderShapes();
+        if (had) emit("shapes");
+      }
 
       function startTouchArrow(anchorSq, penId, e) {
         active = { kind: "arrow", from: anchorSq, to: anchorSq, touch: true, penId, color: currentColor };
@@ -1810,6 +2024,7 @@
           else toggleArrow(active.from, to, active.color);
           active = null; pending = null;
           renderShapes();
+          emit("shapes");
           try { boardEl.releasePointerCapture(e.pointerId); } catch (_) { }
           return;
         }
@@ -1838,6 +2053,7 @@
           else toggleArrow(a.from, to, color);
           active = null;
           renderShapes();
+          emit("shapes");
         }
         try { boardEl.releasePointerCapture(e.pointerId); } catch (_) { }
         active = null; pending = null;
@@ -1869,7 +2085,7 @@
           tile.style.backgroundImage = `url("${src}")`;
           tile.title = src.split("/").pop();
           tile.addEventListener("pointerdown", e => {
-            if (e.button !== 0 || active || refereed()) return;
+            if (e.button !== 0 || active || refereed() || !mayPlay()) return;
             beginPieceDrag({ kind: "img", src }, "palette", e, tile);
           });
           projectTrayEl.appendChild(tile);
@@ -1913,7 +2129,7 @@
           });
           tile.appendChild(x);
           tile.addEventListener("pointerdown", e => {
-            if (e.button !== 0 || active || refereed()) return;
+            if (e.button !== 0 || active || refereed() || !mayPlay()) return;
             beginPieceDrag({ kind: "img", src: item.src }, "palette", e, tile);
           });
           trayEl.appendChild(tile);
@@ -1958,17 +2174,19 @@
         });
         shapes = []; sideToMove = "w"; $("sideToMove").value = "w";
         refresh();
+        emit("change");
       }
       $("btnStart").addEventListener("click", startPosition);
-      $("btnClear").addEventListener("click", () => { model = {}; shapes = []; refresh(); });
+      $("btnClear").addEventListener("click", () => { model = {}; shapes = []; refresh(); emit("change"); });
       $("btnFlip").addEventListener("click", () => { orientation = orientation === "white" ? "black" : "white"; refresh(); });
-      $("btnAnnos").addEventListener("click", () => { shapes = []; renderShapes(); });
+      $("btnAnnos").addEventListener("click", clearAnnotations);
       $("btnNew").addEventListener("click", newGame);
       $("btnUndo").addEventListener("click", () => {
         if (!refereed() || !history.length) return;
         restore(history.pop());
         sel = null; selRes = null; shapes = [];
         refresh();
+        emit("change");
       });
 
       MODE_ORDER.forEach(id => {
@@ -1989,7 +2207,7 @@
       // ---- FEN (free mode only) ----
       const fenInput = $("fenInput");
       const sideSel = $("sideToMove");
-      sideSel.addEventListener("change", () => { sideToMove = sideSel.value; updateFen(); });
+      sideSel.addEventListener("change", () => { sideToMove = sideSel.value; updateFen(); emit("change"); });
 
       function updateFen() {
         if (modeId !== "free") return;
@@ -2033,6 +2251,7 @@
           const tok = str.trim().split(/\s+/)[1];
           if (tok === "w" || tok === "b") { sideToMove = tok; sideSel.value = tok; }
           refresh();
+          emit("change");
           toast("Position chargée");
         } catch (_) { toast("FEN invalide", true); }
       }
@@ -2057,13 +2276,19 @@
       try { saved = JSON.parse(localStorage.getItem(MODE_KEY) || "null"); } catch (_) { }
       setMode(saved && MODES[saved.id] ? saved.id : "free", saved ? saved.v : 0);
 
-      // Small handle for tests and for a future online mode.
-      window.__echiquier = {
-        setMode, doAction,
-        state: () => ({ modeId, N, model, game, sel, selRes, history: history.length })
+      // Interface utilisée par les modules à côté (net.js pour le jeu en ligne) et par les tests.
+      window.Echiquier = window.__echiquier = {
+        MODES, on, guards, statusExtras,
+        setMode, doAction, newGame, refresh, toast,
+        exportState, importState,
+        getShapes: () => JSON.parse(JSON.stringify(shapes)), setShapes,
+        setOrientation: o => { orientation = o === "black" ? "black" : "white"; refresh(); },
+        mode: () => mode, refereed,
+        state: () => ({ modeId, variantIdx, N, model, game, sel, selRes, orientation, history: history.length })
       };
     })();
   </script>
+  <script src="net.js"></script>
 </body>
 
 </html>
