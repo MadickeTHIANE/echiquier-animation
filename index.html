@@ -5,7 +5,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Échiquier d'animation — Échecs et Mad</title>
+  <script>
+    // Thème appliqué avant l'affichage : choix enregistré, sinon réglage du système.
+    (function () {
+      var t = null;
+      try { t = localStorage.getItem("echecs-mad-theme"); } catch (e) { }
+      if (t !== "light" && t !== "dark") {
+        t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
   <style>
+    /* Thème clair (par défaut) */
     :root {
       --paper: #f4efe6;
       --paper-2: #efe7d8;
@@ -21,6 +33,77 @@
       --shadow: 0 10px 30px -12px rgba(33, 28, 22, .35);
       --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
       --sans: ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+      /* Couleurs par rôle : ce sont elles que le thème sombre redéfinit */
+      --page-bg: radial-gradient(1200px 600px at 80% -10%, #fbf7ee 0%, rgba(251, 247, 238, 0) 60%), linear-gradient(180deg, #f6f1e8 0%, #efe7d8 100%);
+      --card: #fffaf0;
+      --card-soft: rgba(255, 255, 255, .45);
+      --field: #fff;
+      --btn-bg: #fffaf0;
+      --btn-text: var(--ink);
+      --btn-line: var(--line);
+      --btn-hover: #fff;
+      --primary-bg: var(--ink);
+      --primary-text: #f6f1e8;
+      --primary-hover: #332b22;
+      --on-accent: #fffaf0;
+      --frame: linear-gradient(160deg, #fffaf0, #f3ead9);
+      --frame-line: rgba(122, 82, 48, .18);
+      --coord-on-light: #b58863;
+      --coord-on-dark: #f0d9b5;
+      --tile-bg: rgba(255, 255, 255, .5);
+      --tile-hover: #fff;
+      --image-tile: #fff;
+      --over-bg: var(--ink);
+      --over-text: #f6f1e8;
+      --over-meta: #d8cdb8;
+      --toast-bg: var(--ink);
+      --toast-text: #f6f1e8;
+      --side-line: #3a3a3a;
+      --wait: #e0a526;
+      color-scheme: light;
+    }
+
+    /* Thème sombre : charte graphique Échecs et Mad */
+    :root[data-theme="dark"] {
+      --ink: #FBEFE1;
+      --ink-soft: #E8BE92;
+      --line: #0F6F78;
+      --sq-light: #E8BE92;
+      --sq-dark: #B4704C;
+      --accent: #F3C44E;
+      --green: #66B27A;
+      --red: #EB6A55;
+      --blue: #3C78B8;
+      --shadow: 0 10px 30px -12px rgba(0, 0, 0, .65);
+
+      --page-bg: #1F2930;
+      --card: #005772;
+      --card-soft: #005772;
+      --field: #1F2930;
+      --btn-bg: #0F6F78;
+      --btn-text: #FBEFE1;
+      --btn-line: #0F6F78;
+      --btn-hover: #14838d;
+      --primary-bg: #F3C44E;
+      --primary-text: #4E3225;
+      --primary-hover: #f7d375;
+      --on-accent: #4E3225;
+      --frame: #4E3225;
+      --frame-line: rgba(232, 190, 146, .28);
+      --coord-on-light: #4E3225;
+      --coord-on-dark: #FBEFE1;
+      --tile-bg: #E8BE92;
+      --tile-hover: #f1d2b0;
+      --image-tile: #FBEFE1;
+      --over-bg: #F3C44E;
+      --over-text: #4E3225;
+      --over-meta: #4E3225;
+      --toast-bg: #FBEFE1;
+      --toast-text: #1F2930;
+      --side-line: #FBEFE1;
+      --wait: #F3C44E;
+      color-scheme: dark;
     }
 
     * {
@@ -37,9 +120,7 @@
     body {
       font-family: var(--sans);
       color: var(--ink);
-      background:
-        radial-gradient(1200px 600px at 80% -10%, #fbf7ee 0%, rgba(251, 247, 238, 0) 60%),
-        linear-gradient(180deg, #f6f1e8 0%, #efe7d8 100%);
+      background: var(--page-bg);
       min-height: 100vh;
       padding: 18px 16px 40px;
       display: flex;
@@ -100,9 +181,9 @@
       font-family: var(--sans);
       font-size: 13.5px;
       font-weight: 600;
-      color: var(--ink);
-      background: #fffaf0;
-      border: 1px solid var(--line);
+      color: var(--btn-text);
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-line);
       border-radius: 10px;
       padding: 9px 13px;
       cursor: pointer;
@@ -114,7 +195,7 @@
     }
 
     button.btn:hover {
-      background: #fff;
+      background: var(--btn-hover);
       box-shadow: 0 4px 14px -8px rgba(33, 28, 22, .4);
     }
 
@@ -123,13 +204,13 @@
     }
 
     button.btn.primary {
-      background: var(--ink);
-      color: #f6f1e8;
-      border-color: var(--ink);
+      background: var(--primary-bg);
+      color: var(--primary-text);
+      border-color: var(--primary-bg);
     }
 
     button.btn.primary:hover {
-      background: #332b22;
+      background: var(--primary-hover);
     }
 
     .btn svg {
@@ -149,7 +230,7 @@
       gap: 6px;
       align-items: center;
       padding: 7px 9px;
-      background: #fffaf0;
+      background: var(--card);
       border: 1px solid var(--line);
       border-radius: 10px;
     }
@@ -158,7 +239,7 @@
       width: 22px;
       height: 22px;
       border-radius: 6px;
-      border: 2px solid #fffaf0;
+      border: 2px solid var(--card);
       outline: 1px solid var(--line);
       cursor: pointer;
       padding: 0;
@@ -200,7 +281,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(255, 255, 255, .5);
+      background: var(--tile-bg);
       border: 1px solid var(--line);
       border-radius: 9px;
       cursor: grab;
@@ -210,7 +291,7 @@
     }
 
     .spare .piece-tile:hover {
-      background: #fff;
+      background: var(--tile-hover);
     }
 
     .spare .piece-tile:active {
@@ -228,7 +309,7 @@
       position: relative;
       width: min(86vmin, 560px);
       padding: 14px;
-      background: linear-gradient(160deg, #fffaf0, #f3ead9);
+      background: var(--frame);
       border: 1px solid var(--line);
       border-radius: 16px;
       box-shadow: var(--shadow);
@@ -238,7 +319,7 @@
       content: "";
       position: absolute;
       inset: 6px;
-      border: 1px solid rgba(122, 82, 48, .18);
+      border: 1px solid var(--frame-line);
       border-radius: 11px;
       pointer-events: none;
     }
@@ -313,11 +394,11 @@
     }
 
     .sq.light .coord {
-      color: #b58863;
+      color: var(--coord-on-light);
     }
 
     .sq.dark .coord {
-      color: #f0d9b5;
+      color: var(--coord-on-dark);
     }
 
     .piece {
@@ -395,7 +476,7 @@
     .custom {
       width: 100%;
       max-width: 560px;
-      background: rgba(255, 255, 255, .45);
+      background: var(--card-soft);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 12px 13px;
@@ -440,7 +521,7 @@
       height: 54px;
       border: 1px solid var(--line);
       border-radius: 10px;
-      background: #fff center/contain no-repeat;
+      background: var(--image-tile) center/contain no-repeat;
       cursor: grab;
       touch-action: none;
       box-shadow: 0 1px 4px -2px rgba(0, 0, 0, .3);
@@ -457,8 +538,8 @@
       width: 19px;
       height: 19px;
       border-radius: 50%;
-      background: var(--ink);
-      color: #fff;
+      background: var(--primary-bg);
+      color: var(--primary-text);
       border: none;
       font-size: 12px;
       line-height: 1;
@@ -482,7 +563,7 @@
       gap: 10px 18px;
       font-size: 13px;
       color: var(--ink-soft);
-      background: rgba(255, 255, 255, .4);
+      background: var(--card-soft);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 13px 16px;
@@ -523,7 +604,7 @@
     kbd {
       font-family: var(--sans);
       font-size: 11.5px;
-      background: #fffaf0;
+      background: var(--field);
       border: 1px solid var(--line);
       border-bottom-width: 2px;
       border-radius: 5px;
@@ -555,7 +636,7 @@
       padding: 8px 10px;
       border: 1px solid var(--line);
       border-radius: 9px;
-      background: #fffaf0;
+      background: var(--field);
       color: var(--ink);
     }
 
@@ -564,7 +645,7 @@
       padding: 7px 8px;
       border: 1px solid var(--line);
       border-radius: 9px;
-      background: #fffaf0;
+      background: var(--btn-bg);
       color: var(--ink);
       font-family: var(--sans);
     }
@@ -574,8 +655,8 @@
       bottom: 18px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      background: var(--ink);
-      color: #f6f1e8;
+      background: var(--toast-bg);
+      color: var(--toast-text);
       padding: 10px 16px;
       border-radius: 10px;
       font-size: 13px;
@@ -627,7 +708,7 @@
       padding: 9px 10px;
       border: 1px solid var(--line);
       border-radius: 10px;
-      background: #fffaf0;
+      background: var(--btn-bg);
       max-width: 100%;
     }
 
@@ -660,7 +741,7 @@
       gap: 3px;
       align-items: center;
       text-align: center;
-      background: #fffaf0;
+      background: var(--card);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 10px 14px;
@@ -681,23 +762,23 @@
     }
 
     .status.over {
-      background: var(--ink);
-      border-color: var(--ink);
+      background: var(--over-bg);
+      border-color: var(--over-bg);
     }
 
     .status.over .main {
-      color: #f6f1e8;
+      color: var(--over-text);
     }
 
     .status.over .meta {
-      color: #d8cdb8;
+      color: var(--over-meta);
     }
 
     .status .side {
       width: 15px;
       height: 15px;
       border-radius: 50%;
-      border: 2px solid #3a3a3a;
+      border: 2px solid var(--side-line);
       flex: 0 0 auto;
     }
 
@@ -710,7 +791,7 @@
     }
 
     .status.over .side {
-      border-color: #d8cdb8;
+      border-color: var(--over-meta);
     }
 
     .spare .piece-tile.off {
@@ -719,7 +800,7 @@
     }
 
     .spare .piece-tile.sel {
-      background: #fff;
+      background: var(--tile-hover);
       outline: 2px solid var(--ink);
       outline-offset: 1px;
     }
@@ -753,7 +834,7 @@
     .rules {
       width: 100%;
       max-width: 560px;
-      background: rgba(255, 255, 255, .45);
+      background: var(--card-soft);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 10px 14px;
@@ -820,7 +901,7 @@
     }
 
     .net-dot.wait {
-      background: #e0a526;
+      background: var(--wait);
     }
 
     .net-dot.off {
@@ -830,7 +911,7 @@
     .netpanel {
       width: 100%;
       max-width: 560px;
-      background: #fffaf0;
+      background: var(--card);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 13px 15px;
@@ -874,7 +955,7 @@
       padding: 8px 8px;
       border: 1px solid var(--line);
       border-radius: 10px;
-      background: #fff;
+      background: var(--field);
       color: var(--ink);
     }
 
@@ -949,7 +1030,7 @@
       padding: 7px 9px;
       border: 1px solid var(--line);
       border-radius: 10px;
-      background: #fff;
+      background: var(--btn-bg);
     }
 
     .net-state {
@@ -987,7 +1068,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background: #fffaf0;
+      background: var(--card);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 9px 13px;
@@ -1010,7 +1091,7 @@
       font-family: var(--serif);
       font-size: 24px;
       font-style: italic;
-      color: #fffaf0;
+      color: var(--on-accent);
     }
 
     .bot-avatar img {
@@ -1068,13 +1149,97 @@
         animation: none;
       }
     }
+  
+
+    /* ---------- Thème : bouton de bascule, focus, détails du mode sombre ---------- */
+    .toast.err {
+      background: var(--red);
+      color: #fff;
+    }
+
+    :root[data-theme="dark"] .toast.err {
+      color: #1F2930;
+    }
+
+    .theme-btn {
+      font-family: var(--sans);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      background: transparent;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 11px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .theme-btn:hover {
+      color: var(--ink);
+    }
+
+    .theme-btn svg {
+      width: 14px;
+      height: 14px;
+      display: block;
+    }
+
+    header .head-side {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    :root[data-theme="dark"] select,
+    :root[data-theme="dark"] .fen input,
+    :root[data-theme="dark"] .net-input {
+      color: var(--ink);
+    }
+
+    :root[data-theme="dark"] .modebar select,
+    :root[data-theme="dark"] .fen select,
+    :root[data-theme="dark"] .net-side select {
+      border-color: var(--btn-line);
+    }
+
+    :root[data-theme="dark"] button.btn:hover {
+      box-shadow: 0 4px 14px -8px rgba(0, 0, 0, .7);
+    }
+
+    :root[data-theme="dark"] .chip.active,
+    :root[data-theme="dark"] .spare .piece-tile.sel {
+      outline-color: var(--accent);
+    }
+
+    :root[data-theme="dark"] .spare .piece-tile {
+      border-color: #4E3225;
+    }
+
+    :root[data-theme="dark"] .board {
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .3);
+    }
+
   </style>
 </head>
 
 <body>
   <header>
     <h1>Échiquier d'<span class="accent">animation</span></h1>
-    <div class="sub">Échecs&nbsp;et&nbsp;Mad · support pédagogique</div>
+    <div class="head-side">
+      <div class="sub">Échecs&nbsp;et&nbsp;Mad · support pédagogique</div>
+      <button class="theme-btn" id="btnTheme" type="button"></button>
+    </div>
   </header>
 
   <div class="wrap">
@@ -1801,7 +1966,7 @@
         if (preview && preview.type === "hl") allHl.push(preview);
         for (const s of allHl) {
           const p = sqToRC(s.square);
-          hl += `<rect x="${p.col + 0.04}" y="${p.row + 0.04}" width="0.92" height="0.92" rx="0.1" fill="${HEX[s.color]}" fill-opacity="0.5"/>`;
+          hl += `<rect x="${p.col + 0.04}" y="${p.row + 0.04}" width="0.92" height="0.92" rx="0.1" style="fill:var(--${s.color})" fill-opacity="0.5"/>`;
         }
         hlLayer.innerHTML = hl;
 
@@ -1828,7 +1993,7 @@
             [back.x - px * SHAFT, back.y - py * SHAFT],
             [start.x - px * SHAFT, start.y - py * SHAFT]
           ].map(p => p[0].toFixed(3) + "," + p[1].toFixed(3)).join(" ");
-          ar += `<polygon points="${pts}" fill="${HEX[s.color]}" fill-opacity="0.9" stroke="${HEX[s.color]}" stroke-width="0.03" stroke-linejoin="round"/>`;
+          ar += `<polygon points="${pts}" style="fill:var(--${s.color});stroke:var(--${s.color})" fill-opacity="0.9" stroke-width="0.03" stroke-linejoin="round"/>`;
         }
         arLayer.innerHTML = ar;
       }
@@ -2399,11 +2564,40 @@
       let toastTimer = null;
       function toast(msg, isErr) {
         toastEl.textContent = msg;
-        toastEl.style.background = isErr ? "var(--red)" : "var(--ink)";
+        toastEl.classList.toggle("err", !!isErr);
         toastEl.classList.add("show");
         clearTimeout(toastTimer);
         toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
       }
+
+      // ---- Thème clair / sombre ----
+      // Sans choix enregistré, la page suit le réglage du système (et ses changements).
+      const THEME_KEY = "echecs-mad-theme";
+      const darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+      const systemTheme = () => (darkQuery && darkQuery.matches ? "dark" : "light");
+      const SUN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>`;
+      const MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>`;
+      function applyTheme(t) {
+        document.documentElement.setAttribute("data-theme", t);
+        const dark = t === "dark";
+        $("btnTheme").innerHTML = (dark ? SUN : MOON) + `<span>${dark ? "Mode clair" : "Mode sombre"}</span>`;
+        $("btnTheme").setAttribute("aria-pressed", String(dark));
+      }
+      function storedTheme() {
+        try { const t = localStorage.getItem(THEME_KEY); return t === "light" || t === "dark" ? t : null; } catch (_) { return null; }
+      }
+      $("btnTheme").addEventListener("click", () => {
+        const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        try {
+          // Revenir au même réglage que le système = recommencer à le suivre.
+          if (next === systemTheme()) localStorage.removeItem(THEME_KEY); else localStorage.setItem(THEME_KEY, next);
+        } catch (_) { }
+        applyTheme(next);
+      });
+      if (darkQuery && darkQuery.addEventListener) {
+        darkQuery.addEventListener("change", () => { if (!storedTheme()) applyTheme(systemTheme()); });
+      }
+      applyTheme(storedTheme() || systemTheme());
 
       // ---- Init ----
       loadCustom();
