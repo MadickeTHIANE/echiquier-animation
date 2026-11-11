@@ -93,23 +93,23 @@
   .pieces{z-index:2;}
   .arrow-layer{z-index:3;pointer-events:none;}
 
-  .sq{position:absolute;width:12.5%;height:12.5%;}
+  .sq{position:absolute;width:calc(100%/var(--n));height:calc(100%/var(--n));}
   .sq.light{background:var(--sq-light);}
   .sq.dark{background:var(--sq-dark);}
-  .sq .coord{position:absolute;font-size:2.5cqi;font-weight:700;opacity:.7;font-family:var(--sans);}
+  .sq .coord{position:absolute;font-size:calc(12cqi/var(--n) + 1cqi);font-weight:700;opacity:.7;font-family:var(--sans);}
   .sq .coord.file{right:.5cqi;bottom:.2cqi;}
   .sq .coord.rank{left:.6cqi;top:.2cqi;}
   .sq.light .coord{color:#b58863;}
   .sq.dark .coord{color:#f0d9b5;}
 
   .piece{
-    position:absolute;width:12.5%;height:12.5%;display:flex;align-items:center;justify-content:center;
+    position:absolute;width:calc(100%/var(--n));height:calc(100%/var(--n));display:flex;align-items:center;justify-content:center;
     cursor:grab;touch-action:none;filter:drop-shadow(0 .45cqi .35cqi rgba(0,0,0,.28));
   }
   .piece:active{cursor:grabbing;}
-  .piece .g{font-size:9.4cqi;line-height:1;user-select:none;}
-  .piece.w .g{color:#fafafa;-webkit-text-stroke:.24cqi #3a3a3a;}
-  .piece.b .g{color:#2a2a2a;-webkit-text-stroke:.18cqi #0a0a0a;}
+  .piece .g{font-size:calc(75.2cqi/var(--n));line-height:1;user-select:none;}
+  .piece.w .g{color:#fafafa;-webkit-text-stroke:calc(1.92cqi/var(--n)) #3a3a3a;}
+  .piece.b .g{color:#2a2a2a;-webkit-text-stroke:calc(1.44cqi/var(--n)) #0a0a0a;}
   .piece img{width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none;}
 
   .ghost{position:fixed;z-index:9999;pointer-events:none;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));opacity:.95;}
@@ -145,6 +145,37 @@
   .fen select{font-size:12.5px;padding:7px 8px;border:1px solid var(--line);border-radius:9px;background:#fffaf0;color:var(--ink);font-family:var(--sans);}
   .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#f6f1e8;padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:10000;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---------- Game modes ---------- */
+  .hidden{display:none !important;}
+  .board{--n:8;}
+  .board-shell.small{width:min(78vmin,440px);}
+  .modebar{width:100%;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:center;font-size:13.5px;}
+  .modebar > label:first-child{font-family:var(--serif);font-weight:600;font-size:15px;}
+  .modebar select{font-family:var(--sans);font-size:13.5px;font-weight:600;color:var(--ink);padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fffaf0;max-width:100%;}
+  .modebar .check{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft);cursor:pointer;user-select:none;}
+  .modebar .check input{width:16px;height:16px;accent-color:var(--accent);}
+  button.btn:disabled{opacity:.45;cursor:default;box-shadow:none;}
+  .status{width:100%;max-width:560px;display:flex;flex-direction:column;gap:3px;align-items:center;text-align:center;
+    background:#fffaf0;border:1px solid var(--line);border-radius:12px;padding:10px 14px;}
+  .status .main{font-family:var(--serif);font-size:clamp(17px,2.6vw,21px);font-weight:600;display:inline-flex;align-items:center;gap:9px;}
+  .status .meta{font-size:13px;color:var(--ink-soft);}
+  .status.over{background:var(--ink);border-color:var(--ink);}
+  .status.over .main{color:#f6f1e8;} .status.over .meta{color:#d8cdb8;}
+  .status .side{width:15px;height:15px;border-radius:50%;border:2px solid #3a3a3a;flex:0 0 auto;}
+  .status .side.w{background:#fafafa;} .status .side.b{background:#2a2a2a;}
+  .status.over .side{border-color:#d8cdb8;}
+  .spare .piece-tile.off{opacity:.3;pointer-events:none;}
+  .spare .piece-tile.sel{background:#fff;outline:2px solid var(--ink);outline-offset:1px;}
+  .spare .spare-done{font-size:12.5px;color:var(--ink-soft);font-style:italic;padding:8px 0;}
+  .piece.idle{cursor:default;}
+  .piece img.skin{width:88%;height:88%;object-fit:cover;border-radius:14%;box-shadow:0 0 0 calc(1.6cqi/var(--n)) rgba(255,250,240,.9);}
+  .ghost img.skin{width:88%;height:88%;object-fit:cover;border-radius:14%;}
+  .rules{width:100%;max-width:560px;background:rgba(255,255,255,.45);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--ink-soft);}
+  .rules summary{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;}
+  .rules ul{margin:8px 0 4px;padding-left:18px;display:flex;flex-direction:column;gap:5px;line-height:1.45;}
+  .rules b{color:var(--ink);font-weight:600;}
+  .rules .src{margin:6px 0 0;font-size:12px;font-style:italic;}
 </style>
 </head>
 <body>
@@ -155,14 +186,30 @@
 
 <div class="wrap">
 
+  <div class="modebar">
+    <label for="modeSel">Mode de jeu</label>
+    <select id="modeSel"></select>
+    <select id="variantSel" class="hidden" title="Variante"></select>
+    <label class="check" id="refWrap"><input type="checkbox" id="chkReferee" checked> Arbitrage des règles</label>
+    <label class="check" id="skinWrap"><input type="checkbox" id="chkSkins" checked> Personnages</label>
+  </div>
+
   <div class="toolbar">
-    <button class="btn primary" id="btnStart">
+    <button class="btn primary freeOnly" id="btnStart">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
       Position de départ
     </button>
-    <button class="btn" id="btnClear">
+    <button class="btn freeOnly" id="btnClear">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
       Vider l'échiquier
+    </button>
+    <button class="btn primary gameOnly" id="btnNew">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      Nouvelle partie
+    </button>
+    <button class="btn gameOnly" id="btnUndo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-5-5 5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>
+      Annuler le coup
     </button>
     <button class="btn" id="btnFlip">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
@@ -172,7 +219,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
       Effacer les annotations
     </button>
-    <button class="btn" id="btnUpload">
+    <button class="btn looseOnly" id="btnUpload">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
       Charger des images
     </button>
@@ -185,9 +232,11 @@
     </div>
   </div>
 
+  <div class="status gameOnly" id="status" aria-live="polite"></div>
+
   <div class="spare" id="spareTop"></div>
 
-  <div class="board-shell">
+  <div class="board-shell" id="boardShell">
     <div class="board" id="board">
       <div class="layer squares" id="squares"></div>
       <svg class="layer hl-layer" id="hlLayer" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
@@ -198,7 +247,12 @@
 
   <div class="spare" id="spareBottom"></div>
 
-  <div class="custom">
+  <details class="rules gameOnly" id="rules" open>
+    <summary>Règles du jeu</summary>
+    <div id="rulesBody"></div>
+  </details>
+
+  <div class="custom looseOnly">
     <div class="head">
       <span class="t">Pièces du projet</span>
       <span class="hint">Stockées dans le dépôt — disponibles sur tous vos appareils.</span>
@@ -206,7 +260,7 @@
     <div class="tray" id="projectTray"></div>
   </div>
 
-  <div class="custom">
+  <div class="custom looseOnly">
     <div class="head">
       <span class="t">Images de cet appareil</span>
       <span class="hint">Chargées via le bouton — visibles seulement sur ce navigateur.</span>
@@ -214,7 +268,7 @@
     <div class="tray" id="tray"></div>
   </div>
 
-  <div class="fen">
+  <div class="fen freeOnly">
     <label for="fenInput">FEN</label>
     <select id="sideToMove" title="Trait">
       <option value="w">Trait aux Blancs</option>
@@ -225,7 +279,8 @@
   </div>
 
   <div class="legend">
-    <div class="row"><span class="dot" style="background:var(--ink)"></span><span><b>Pièces&nbsp;:</b> glissez depuis les réserves vers l'échiquier. Déplacez en glissant. <b>Supprimez</b> en glissant hors de l'échiquier.</span></div>
+    <div class="row looseOnly"><span class="dot" style="background:var(--ink)"></span><span><b>Pièces&nbsp;:</b> glissez depuis les réserves vers l'échiquier. Déplacez en glissant. <b>Supprimez</b> en glissant hors de l'échiquier.</span></div>
+    <div class="row refOnly"><span class="dot" style="background:var(--ink)"></span><span><b>Jouer&nbsp;:</b> glissez une pièce vers une case autorisée, ou touchez la pièce puis la case d'arrivée. Les points indiquent les coups possibles.</span></div>
     <div class="row"><span class="dot green"></span><span><b>Flèches (souris)&nbsp;:</b> clic droit <b>maintenu</b> d'une case vers une autre.</span></div>
     <div class="row"><span class="dot red"></span><span><b>Surbrillance (souris)&nbsp;:</b> clic droit sur une case.</span></div>
     <div class="row"><span class="dot blue"></span><span><b>Couleurs&nbsp;:</b> sélecteur en haut · à la souris <kbd>Ctrl</kbd>&nbsp;=&nbsp;rouge, <kbd>Alt</kbd>&nbsp;=&nbsp;bleu (priment).</span></div>
@@ -240,60 +295,390 @@
 (function(){
   "use strict";
 
-  const FILES = ["a","b","c","d","e","f","g","h"];
+  const ALL_FILES = "abcdefgh";
   const GLYPH = {K:"♚",Q:"♛",R:"♜",B:"♝",N:"♞",P:"♟"};
-  const COLOR = {green:"var(--green)",red:"var(--red)",blue:"var(--blue)"};
+  const VALUE = {Q:9,R:5,B:3,N:3,P:1,K:0};
   const HEX   = {green:"#22a722",red:"#e23636",blue:"#3b7ddd"};
   const STORE_KEY = "echecs-mad-custom-v1";
-  const PIECES_DIR = "pieces";          // folder in the repo holding shared images
+  const MODE_KEY  = "echecs-mad-mode-v1";
+  const PIECES_DIR = "pieces";           // folder in the repo holding shared images
   const PIECES_LIST = "pieces/list.txt"; // one image filename per line
 
-  const boardEl  = document.getElementById("board");
-  const sqLayer  = document.getElementById("squares");
-  const pcLayer  = document.getElementById("pieces");
-  const hlLayer  = document.getElementById("hlLayer");
-  const arLayer  = document.getElementById("arrowLayer");
-  const trayEl   = document.getElementById("tray");
-  const projectTrayEl = document.getElementById("projectTray");
-  const toastEl  = document.getElementById("toast");
+  /* =====================================================================
+     GAME MODES
+     Each mode is plain data. To add a game: copy a block, change the setup.
+     setup entries: "<case> <couleur+pièce> [image dans pieces/]"
+       w = camp qui monte (rangée 1 -> 8), b = camp qui descend.
+     goals.reach : ce camp gagne dès qu'une pièce de ce type atteint la dernière rangée.
+     Un camp qui n'a plus de pièce a perdu.
+     stuck : que faire si le camp au trait ne peut plus bouger ("lose" | "pass" | "points").
+     ===================================================================== */
+  const MODES = {
+    free: { name:"Animation libre", size:8 },
+
+    mousquetaires: {
+      name:"Les 4 Mousquetaires · échiquier de 16 cases",
+      size:4, first:"w",
+      sides:{w:"Blancs", b:"Noirs"},
+      turnText:{w:"Aux Blancs de jouer", b:"Aux Noirs de jouer"},
+      placeText:{w:"Aux Blancs de poser une pièce", b:"Aux Noirs de poser une pièce"},
+      placement:["Q","R","B","N"],
+      quietLimit:6, tieWinner:"b", scoring:true, stuck:"points",
+      winText:{
+        captureAll:{w:"Les Blancs ont capturé toutes les pièces noires.", b:"Les Noirs ont capturé toutes les pièces blanches."}
+      },
+      rules:[
+        "<b>Matériel :</b> chaque camp a une dame, une tour, un fou et un cavalier. L'échiquier de 16 cases est vide au départ.",
+        "<b>Placement :</b> les Blancs posent une première pièce sur une case libre, puis les Noirs, et ainsi de suite jusqu'à ce que les 8 pièces soient posées.",
+        "<b>Jeu :</b> dès que les Noirs ont posé leur dernière pièce, les Blancs jouent. Les pièces se déplacent et capturent comme aux échecs.",
+        "<b>But :</b> capturer toutes les pièces adverses.",
+        "<b>Comptage :</b> après 6 déplacements sans prise (3 par camp), on additionne la valeur des pièces restantes : dame 9, tour 5, fou 3, cavalier 3.",
+        "<b>Égalité :</b> les Noirs gagnent, car ils ont eu le désavantage de jouer en second."
+      ],
+      source:"Valeur des pièces : « Animations ludiques autour du jeu d'échecs » v5 et Cahier Débutant 2 (La valeur des pièces)."
+    },
+
+    loup: {
+      name:"Loup dans la bergerie",
+      size:8, first:"w",
+      sides:{w:"Les moutons", b:"Le loup"},
+      turnText:{w:"Aux moutons de jouer", b:"Au loup de jouer"},
+      goals:{reach:{side:"w", type:"P"}}, stuck:"lose",
+      winText:{
+        reach:"Un mouton a atteint la 8e rangée : les moutons gagnent.",
+        captureAll:{b:"Le loup a dévoré tous les moutons.", w:"Les moutons ont capturé le loup."},
+        stuck:{w:"Les moutons sont bloqués : le loup gagne.", b:"Le loup est bloqué : les moutons gagnent."}
+      },
+      variants:[
+        {name:"Initiation · les moutons ne capturent pas", pawnCaptures:false},
+        {name:"Les moutons capturent en diagonale", pawnCaptures:true}
+      ],
+      setup:["d8 bQ Loup.jpg","a2 wP Blanquette.jpg","b2 wP Blanquette.jpg","c2 wP Blanquette.jpg","d2 wP Blanquette.jpg",
+             "e2 wP Blanquette.jpg","f2 wP Blanquette.jpg","g2 wP Blanquette.jpg","h2 wP Blanquette.jpg"],
+      rules:[
+        "<b>Mise en place :</b> le loup (dame) en d8, les 8 moutons (pions) sur la 2e rangée. Les moutons commencent.",
+        "<b>Les moutons</b> avancent comme des pions et jouent ensemble. Ils gagnent si l'un d'eux atteint la 8e rangée.",
+        "<b>Le loup</b> se déplace comme une dame. Il gagne s'il capture tous les moutons ou s'il les bloque.",
+        "<b>En initiation,</b> les moutons ne capturent pas en diagonale (variante à choisir dans le menu)."
+      ],
+      source:"Fiche animation n°1 « Le Loup et les Moutons », J. Cappon."
+    },
+
+    sanglier: {
+      name:"Sanglier contre chasseur",
+      size:8, first:"w",
+      sides:{w:"Le sanglier", b:"Les chasseurs"},
+      turnText:{w:"Au sanglier de jouer", b:"Aux chasseurs de jouer"},
+      goals:{reach:{side:"w", type:"N"}}, stuck:"lose",
+      winText:{
+        reach:"Le sanglier a rejoint son terrier (8e rangée) : il gagne.",
+        captureAll:{b:"Les chasseurs ont capturé le sanglier.", w:"Le sanglier a renversé tous les chasseurs."}
+      },
+      variants:[
+        {name:"Niveau 1 · 2 chasseurs", setup:["d1 wN Sanglier.png","c8 bB Chasseur.png","f8 bB Chasseur.png"]},
+        {name:"Niveau 2 · 3 chasseurs", setup:["d1 wN Sanglier.png","a8 bB Chasseur.png","c8 bB Chasseur.png","f8 bB Chasseur.png"]},
+        {name:"Niveau 3 · 4 chasseurs", setup:["d1 wN Sanglier.png","a8 bB Chasseur.png","c8 bB Chasseur.png","f8 bB Chasseur.png","h8 bB Chasseur.png"]},
+        {name:"Pumba et les 3 hyènes", setup:["d1 wN Pumba.png","a8 bB Shenzi.png","c8 bB Banzaï.png","f8 bB Ed.png"]},
+        {name:"Pumba, les hyènes et Scar", setup:["d1 wN Pumba.png","a8 bB Shenzi.png","c8 bB Banzaï.png","f8 bB Ed.png","h8 bB Scar.png"]}
+      ],
+      rules:[
+        "<b>Mise en place :</b> le sanglier (cavalier) en d1, les chasseurs (fous) en c8 et f8. Le sanglier commence.",
+        "<b>Le sanglier</b> gagne s'il atteint n'importe quelle case de la 8e rangée, son terrier.",
+        "<b>Les chasseurs</b> gagnent s'ils capturent le sanglier.",
+        "Partie sans roi, les pièces jouent normalement. <b>Progression :</b> un 3e chasseur en a8, puis un 4e en h8."
+      ],
+      source:"Fiche animation n°2 « Les Chasseurs et le Sanglier », J. Cappon."
+    },
+
+    dalton: {
+      name:"Lucky Luke contre les Dalton",
+      size:8, first:"w",
+      sides:{w:"Les Dalton", b:"Lucky Luke"},
+      turnText:{w:"Aux Dalton de jouer", b:"À Lucky Luke de jouer"},
+      goals:{reach:{side:"w", type:"P"}}, stuck:"pass",
+      winText:{
+        reach:"Un Dalton a atteint la 8e rangée : les Dalton se sont évadés !",
+        captureAll:{b:"Lucky Luke a rattrapé les quatre Dalton.", w:"Les Dalton ont capturé Lucky Luke."}
+      },
+      variants:[
+        {name:"Exercice 1 · les Dalton isolés", setup:["e8 bR Lucky_Luke.jpg","b2 wP Joe.png","d2 wP William.png","f2 wP Jack.png","h2 wP Averell.png"]},
+        {name:"Exercice 2 · les Dalton liés", setup:["e8 bR Lucky_Luke.jpg","a2 wP Joe.png","b2 wP William.png","c2 wP Jack.png","d2 wP Averell.png"]}
+      ],
+      rules:[
+        "<b>Mise en place :</b> Lucky Luke (tour) en e8, les quatre Dalton (pions) en bas de l'échiquier. Les Dalton commencent.",
+        "<b>Les Dalton</b> avancent et capturent comme des pions. Ils gagnent si l'un d'eux atteint la 8e rangée : le tunnel est creusé.",
+        "<b>Lucky Luke</b> se déplace comme une tour. Il gagne s'il capture les quatre Dalton.",
+        "<b>À faire émerger :</b> les pions isolés sont des faiblesses, les pions liés se défendent entre eux."
+      ],
+      source:"Jeu de Madické Thiane, mémoire DAFFE « L'apprentissage par le jeu »."
+    },
+
+    jument: {
+      name:"Le Cavalier et sa jument",
+      size:8, first:"w", refereeOff:true,
+      sides:{w:"Le cavalier", b:"La jument"},
+      setup:["b1 wN cheval.png","g1 wN jument.png"],
+      rules:[
+        "<b>Position provisoire :</b> les deux personnages sont posés sur b1 et g1 et se déplacent librement.",
+        "Les règles de ce jeu ne sont pas encore programmées : l'arbitrage sera ajouté dès qu'elles seront précisées."
+      ]
+    }
+  };
+  const MODE_ORDER = ["free","mousquetaires","loup","sanglier","dalton","jument"];
+
+  const $ = id => document.getElementById(id);
+  const boardEl  = $("board");
+  const sqLayer  = $("squares");
+  const pcLayer  = $("pieces");
+  const hlLayer  = $("hlLayer");
+  const arLayer  = $("arrowLayer");
+  const trayEl   = $("tray");
+  const projectTrayEl = $("projectTray");
+  const toastEl  = $("toast");
+  const statusEl = $("status");
+  const modeSel  = $("modeSel");
+  const variantSel = $("variantSel");
 
   // ---- State ----
-  let model = {};            // square -> {kind:"std",code:"wR"} | {kind:"img",src:"..."}
+  let N = 8;                 // board size (8, or 4 for the 16-square board)
+  let FILES = ALL_FILES.split("");
+  let model = {};            // square -> {kind:"std",code:"wR",skin?} | {kind:"img",src}
   let orientation = "white";
   let shapes = [];           // {type:"arrow",from,to,color} | {type:"hl",square,color}
   let custom = [];           // {id, src}
   let sideToMove = "w";
 
+  let modeId = "free";
+  let mode = MODES.free;
+  let variant = null;
+  let game = null;           // null in free mode
+  let history = [];          // snapshots for undo
+  let refereeOn = true;
+  let showSkins = true;
+  let sel = null;            // selected board piece  {sq, targets}
+  let selRes = null;         // selected reserve piece {color, type}
+
+  const other = c => c === "w" ? "b" : "w";
+  const refereed = () => !!(game && game.referee);
+  const colorOf = p => (p && p.kind === "std") ? p.code[0] : null;
+
   // ---- Coordinate helpers ----
+  const fileIdx = sq => FILES.indexOf(sq[0]);
+  const rankOf  = sq => Number(sq.slice(1));
+  const mkSq = (f, r) => (f < 0 || f >= N || r < 1 || r > N) ? null : FILES[f] + r;
   function sqToRC(square){
-    const f = FILES.indexOf(square[0]);
-    const r = 8 - Number(square[1]);          // rank 8 -> row 0
-    return orientation === "white" ? {row:r, col:f} : {row:7-r, col:7-f};
+    const f = fileIdx(square), r = N - rankOf(square);
+    return orientation === "white" ? {row:r, col:f} : {row:N-1-r, col:N-1-f};
   }
   function rcToSq(row,col){
-    let f, r;
-    if(orientation === "white"){ f = col; r = row; }
-    else { f = 7-col; r = 7-row; }
-    return FILES[f] + String(8 - r);
+    const f = orientation === "white" ? col : N-1-col;
+    const r = orientation === "white" ? row : N-1-row;
+    return FILES[f] + String(N - r);
   }
   function center(square){ const p = sqToRC(square); return {x:p.col+0.5, y:p.row+0.5}; }
 
-  // ---- Render squares + coordinates ----
+  /* =====================================================================
+     RULES ENGINE (no kings, no check: these mini-games are played without)
+     ===================================================================== */
+  const DIRS = {
+    R:[[1,0],[-1,0],[0,1],[0,-1]],
+    B:[[1,1],[1,-1],[-1,1],[-1,-1]],
+    N:[[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]]
+  };
+  DIRS.Q = DIRS.R.concat(DIRS.B);
+  DIRS.K = DIRS.Q;
+
+  function movesFrom(sq){
+    const p = model[sq];
+    if(!p || p.kind !== "std") return [];
+    const c = p.code[0], t = p.code[1], f = fileIdx(sq), r = rankOf(sq), out = [];
+    if(t === "P"){
+      const d = c === "w" ? 1 : -1;
+      const one = mkSq(f, r + d);
+      if(one && !model[one]){
+        out.push(one);
+        const startRank = c === "w" ? 2 : N - 1;
+        const two = mkSq(f, r + 2*d);
+        if(N === 8 && r === startRank && two && !model[two]) out.push(two);
+      }
+      if(!variant || variant.pawnCaptures !== false){
+        for(const df of [-1, 1]){
+          const x = mkSq(f + df, r + d);
+          if(x && model[x] && colorOf(model[x]) !== c) out.push(x);
+        }
+      }
+      return out;
+    }
+    const slide = (t === "R" || t === "B" || t === "Q");
+    for(const [df, dr] of DIRS[t]){
+      let nf = f + df, nr = r + dr, x;
+      while((x = mkSq(nf, nr))){
+        if(!model[x]) out.push(x);
+        else { if(colorOf(model[x]) !== c) out.push(x); break; }
+        if(!slide) break;
+        nf += df; nr += dr;
+      }
+    }
+    return out;
+  }
+  function piecesOf(c){ return Object.keys(model).filter(s => colorOf(model[s]) === c); }
+  function hasMoves(c){ return piecesOf(c).some(s => movesFrom(s).length > 0); }
+  function points(c){ return piecesOf(c).reduce((n, s) => n + (VALUE[model[s].code[1]] || 0), 0); }
+
+  function snapshot(){
+    return JSON.stringify({model, g:{phase:game.phase, turn:game.turn, reserve:game.reserve, quiet:game.quiet,
+      last:game.last, result:game.result, note:game.note}});
+  }
+  function restore(s){
+    const o = JSON.parse(s);
+    model = o.model;
+    Object.assign(game, o.g);
+  }
+
+  function end(winner, reason){
+    game.phase = "over";
+    game.result = {winner, reason};
+  }
+  function endByPoints(lead){
+    const w = points("w"), b = points("b");
+    let winner, txt;
+    if(w > b){ winner = "w"; txt = `Blancs ${w} points, Noirs ${b} points.`; }
+    else if(b > w){ winner = "b"; txt = `Noirs ${b} points, Blancs ${w} points.`; }
+    else { winner = mode.tieWinner || null;
+           txt = `Égalité ${w} à ${b} : les Noirs l'emportent, ils ont joué en second.`; }
+    end(winner, lead + " " + txt);
+  }
+  function afterTurnChange(){
+    const side = game.turn;
+    if(hasMoves(side)) return;
+    const o = other(side);
+    if(mode.stuck === "points"){ endByPoints(`${mode.sides[side]} : aucun coup possible.`); return; }
+    if(mode.stuck === "pass"){
+      if(hasMoves(o)){ game.note = `${mode.sides[side]} ne peuvent pas bouger : ils passent leur tour.`; game.turn = o; }
+      else end(null, "Plus aucun coup possible : partie nulle.");
+      return;
+    }
+    const t = mode.winText && mode.winText.stuck && mode.winText.stuck[side];
+    end(o, t || `${mode.sides[side]} : aucun coup possible.`);
+  }
+
+  // Every change to a refereed game goes through here: one small serialisable action.
+  // (This is also the hook an online mode would use: send the action, replay it on the other side.)
+  function doAction(a){
+    if(!refereed() || game.phase === "over") return false;
+    const side = game.turn;
+    game.note = "";
+    if(a.t === "place"){
+      const i = game.reserve[side].indexOf(a.type);
+      if(game.phase !== "place" || i < 0 || !a.to || model[a.to]){ refresh(); return false; }
+      history.push(snapshot());
+      game.reserve[side].splice(i, 1);
+      model[a.to] = {kind:"std", code:side + a.type};
+      game.last = {to:a.to};
+      game.turn = other(side);
+      if(!game.reserve.w.length && !game.reserve.b.length){
+        game.phase = "move"; game.turn = mode.first; game.quiet = 0;
+        afterTurnChange();
+      }
+    } else if(a.t === "move"){
+      const piece = model[a.from];
+      if(game.phase !== "move" || colorOf(piece) !== side || !movesFrom(a.from).includes(a.to)){ refresh(); return false; }
+      history.push(snapshot());
+      const captured = model[a.to];
+      delete model[a.from];
+      model[a.to] = piece;
+      game.last = {from:a.from, to:a.to};
+      game.quiet = captured ? 0 : game.quiet + 1;
+      const g = mode.goals || {}, wt = mode.winText || {};
+      const lastRank = side === "w" ? N : 1;
+      if(g.reach && g.reach.side === side && piece.code[1] === g.reach.type && rankOf(a.to) === lastRank){
+        end(side, wt.reach || "Objectif atteint.");
+      } else if(piecesOf(other(side)).length === 0){
+        end(side, (wt.captureAll && wt.captureAll[side]) || "Toutes les pièces adverses sont capturées.");
+      } else if(mode.quietLimit && game.quiet >= mode.quietLimit){
+        endByPoints(`${mode.quietLimit} déplacements sans prise : on compte les points.`);
+      } else {
+        game.turn = other(side);
+        afterTurnChange();
+      }
+    } else return false;
+    sel = null; selRes = null;
+    refresh();
+    return true;
+  }
+
+  function newGame(){
+    model = {}; shapes = []; history = []; sel = null; selRes = null;
+    const setup = (variant && variant.setup) || mode.setup || [];
+    for(const line of setup){
+      const [sq, code, img] = line.split(" ");
+      model[sq] = {kind:"std", code};
+      if(img) model[sq].skin = PIECES_DIR + "/" + img;
+    }
+    game = {
+      referee: refereeOn && !mode.refereeOff,
+      phase: mode.placement ? "place" : "move",
+      turn: mode.first || "w",
+      reserve: {w:(mode.placement || []).slice(), b:(mode.placement || []).slice()},
+      quiet: 0, last: null, result: null, note: ""
+    };
+    if(game.referee && game.phase === "move") afterTurnChange();
+    refresh();
+  }
+
+  function setMode(id, variantIdx){
+    modeId = MODES[id] ? id : "free";
+    mode = MODES[modeId];
+    variant = mode.variants ? mode.variants[Math.min(variantIdx || 0, mode.variants.length - 1)] : null;
+    N = mode.size;
+    FILES = ALL_FILES.slice(0, N).split("");
+    orientation = "white";
+    boardEl.style.setProperty("--n", N);
+    hlLayer.setAttribute("viewBox", `0 0 ${N} ${N}`);
+    arLayer.setAttribute("viewBox", `0 0 ${N} ${N}`);
+    $("boardShell").classList.toggle("small", N === 4);
+
+    modeSel.value = modeId;
+    variantSel.innerHTML = "";
+    if(mode.variants){
+      mode.variants.forEach((v, i) => {
+        const o = document.createElement("option"); o.value = i; o.textContent = v.name; variantSel.appendChild(o);
+      });
+      variantSel.value = String(mode.variants.indexOf(variant));
+    }
+    variantSel.classList.toggle("hidden", !mode.variants);
+    $("refWrap").classList.toggle("hidden", modeId === "free" || !!mode.refereeOff);
+    $("skinWrap").classList.toggle("hidden", modeId === "free" || !!mode.placement);
+
+    $("rulesBody").innerHTML = modeId === "free" ? "" :
+      "<ul>" + mode.rules.map(r => `<li>${r}</li>`).join("") + "</ul>" +
+      (mode.source ? `<p class="src">Source : ${mode.source}</p>` : "");
+
+    try{ localStorage.setItem(MODE_KEY, JSON.stringify({id:modeId, v:mode.variants ? mode.variants.indexOf(variant) : 0})); }catch(_){}
+
+    if(modeId === "free"){ game = null; history = []; sel = null; selRes = null; startPosition(); }
+    else newGame();
+  }
+
+  /* =====================================================================
+     RENDERING
+     ===================================================================== */
   function renderSquares(){
     sqLayer.innerHTML = "";
-    for(let row=0; row<8; row++){
-      for(let col=0; col<8; col++){
+    const step = 100 / N;
+    for(let row=0; row<N; row++){
+      for(let col=0; col<N; col++){
         const d = document.createElement("div");
         d.className = "sq " + ((row+col)%2 ? "dark" : "light");
-        d.style.left = (col*12.5)+"%";
-        d.style.top  = (row*12.5)+"%";
+        d.style.left = (col*step)+"%";
+        d.style.top  = (row*step)+"%";
         const sq = rcToSq(row,col);
         if(col === 0){
           const r = document.createElement("span");
-          r.className = "coord rank"; r.textContent = sq[1];
+          r.className = "coord rank"; r.textContent = sq.slice(1);
           d.appendChild(r);
         }
-        if(row === 7){
+        if(row === N-1){
           const f = document.createElement("span");
           f.className = "coord file"; f.textContent = sq[0];
           d.appendChild(f);
@@ -303,41 +688,63 @@
     }
   }
 
-  // ---- Render pieces ----
-  function pieceInner(piece, sizePx){
-    if(piece.kind === "std"){
-      const span = document.createElement("span");
-      span.className = "g";
-      span.textContent = GLYPH[piece.code[1]];
-      return {node:span, colorClass: piece.code[0] === "w" ? "w" : "b"};
-    } else {
-      const img = document.createElement("img");
-      img.src = piece.src; img.draggable = false; img.alt = "";
-      return {node:img, colorClass:""};
-    }
+  // Fills `host` with the piece's picture (image or glyph). Falls back to the glyph if an image is missing.
+  function fillPiece(host, piece, glyphPx){
+    host.innerHTML = "";
+    host.classList.remove("w", "b");
+    const glyph = () => {
+      host.innerHTML = "";
+      host.classList.add(piece.code[0] === "w" ? "w" : "b");
+      const s = document.createElement("span");
+      s.className = "g"; s.textContent = GLYPH[piece.code[1]];
+      if(glyphPx) s.style.fontSize = glyphPx + "px";
+      host.appendChild(s);
+    };
+    const src = piece.kind === "img" ? piece.src : (piece.skin && showSkins ? piece.skin : null);
+    if(!src){ glyph(); return; }
+    const img = document.createElement("img");
+    img.draggable = false; img.alt = "";
+    if(piece.kind === "std"){ img.className = "skin"; img.onerror = glyph; }
+    img.src = src;
+    host.appendChild(img);
   }
+
   function renderPieces(){
     pcLayer.innerHTML = "";
+    const step = 100 / N;
     for(const sq in model){
-      const piece = model[sq];
       const p = sqToRC(sq);
       const el = document.createElement("div");
       el.className = "piece";
-      const inner = pieceInner(piece);
-      if(inner.colorClass) el.classList.add(inner.colorClass);
-      el.style.left = (p.col*12.5)+"%";
-      el.style.top  = (p.row*12.5)+"%";
+      fillPiece(el, model[sq]);
+      el.style.left = (p.col*step)+"%";
+      el.style.top  = (p.row*step)+"%";
       el.dataset.square = sq;
-      el.appendChild(inner.node);
+      if(refereed() && !(game.phase === "move" && colorOf(model[sq]) === game.turn)) el.classList.add("idle");
       pcLayer.appendChild(el);
     }
     updateFen();
   }
 
-  // ---- Render shapes (highlights + arrows + preview) ----
   function renderShapes(preview){
-    // highlights
     let hl = "";
+    const rect = (sq, fill, op) => {
+      const p = sqToRC(sq);
+      return `<rect x="${p.col}" y="${p.row}" width="1" height="1" fill="${fill}" fill-opacity="${op}"/>`;
+    };
+    if(refereed() && game.last){
+      if(game.last.from) hl += rect(game.last.from, "#f2c230", 0.38);
+      if(game.last.to)   hl += rect(game.last.to,   "#f2c230", 0.38);
+    }
+    if(sel){
+      hl += rect(sel.sq, "#1f7a3d", 0.34);
+      for(const t of sel.targets){
+        const c = center(t);
+        hl += model[t]
+          ? `<circle cx="${c.x}" cy="${c.y}" r="0.43" fill="none" stroke="#1f7a3d" stroke-opacity="0.6" stroke-width="0.09"/>`
+          : `<circle cx="${c.x}" cy="${c.y}" r="0.15" fill="#1f7a3d" fill-opacity="0.5"/>`;
+      }
+    }
     const allHl = shapes.filter(s=>s.type==="hl");
     if(preview && preview.type==="hl") allHl.push(preview);
     for(const s of allHl){
@@ -346,7 +753,7 @@
     }
     hlLayer.innerHTML = hl;
 
-    // arrows — drawn as a single filled shape so the tip sits exactly at the end
+    // arrows — one filled shape so the tip sits exactly at the end
     let ar = "";
     const allAr = shapes.filter(s=>s.type==="arrow");
     if(preview && preview.type==="arrow") allAr.push(preview);
@@ -374,9 +781,86 @@
     arLayer.innerHTML = ar;
   }
 
-  function fullRender(){ renderSquares(); renderPieces(); renderShapes(); }
+  function renderStatus(){
+    if(!game){ statusEl.innerHTML = ""; return; }
+    statusEl.classList.toggle("over", game.phase === "over");
+    if(!game.referee){
+      statusEl.innerHTML = `<span class="main">Déplacement libre</span><span class="meta">L'arbitrage est désactivé : placez et déplacez les pièces comme vous voulez.</span>`;
+      return;
+    }
+    const dot = c => `<span class="side ${c}"></span>`;
+    let main = "", meta = [];
+    if(game.phase === "over"){
+      const w = game.result.winner;
+      main = w ? `Victoire : ${mode.sides[w]}` : "Partie nulle";
+      meta.push(game.result.reason);
+    } else if(game.phase === "place"){
+      main = dot(game.turn) + mode.placeText[game.turn];
+      meta.push(`Placement : ${game.reserve.w.length + game.reserve.b.length} pièce(s) à poser`);
+    } else {
+      main = dot(game.turn) + mode.turnText[game.turn];
+      if(mode.quietLimit) meta.push(`Déplacements sans prise : ${game.quiet} / ${mode.quietLimit}`);
+    }
+    if(mode.scoring && game.phase !== "place") meta.push(`Points : Blancs ${points("w")} · Noirs ${points("b")}`);
+    if(game.note) meta.push(game.note);
+    statusEl.innerHTML = `<span class="main">${main}</span>` + meta.map(m => `<span class="meta">${m}</span>`).join("");
+  }
 
-  // ---- Shape toggling ----
+  // Top/bottom piece rows: full palettes when playing freely, the pieces left to place in a refereed placement.
+  function renderSpares(){
+    const top = $("spareTop"), bottom = $("spareBottom");
+    const fill = (el, color) => {
+      el.innerHTML = "";
+      let types, placing = false;
+      if(refereed()){
+        if(game.phase !== "place"){ el.classList.add("hidden"); return; }
+        types = game.reserve[color]; placing = true;
+      } else types = ["K","Q","R","B","N","P"];
+      el.classList.remove("hidden");
+      if(placing && !types.length){ el.innerHTML = `<span class="spare-done">Toutes les pièces sont posées</span>`; return; }
+      types.forEach(t => {
+        const tile = document.createElement("div");
+        tile.className = "piece-tile";
+        const g = document.createElement("span");
+        g.className = "g";
+        g.textContent = GLYPH[t];
+        g.style.color = color==="w" ? "#fafafa" : "#2a2a2a";
+        g.style.webkitTextStroke = color==="w" ? "1.5px #3a3a3a" : "1px #0a0a0a";
+        tile.appendChild(g);
+        if(placing){
+          if(color !== game.turn) tile.classList.add("off");
+          if(selRes && selRes.color === color && selRes.type === t) tile.classList.add("sel");
+        }
+        tile.addEventListener("pointerdown", e=>{
+          if(e.button !== 0 || active) return;
+          if(placing){
+            if(color !== game.turn) return;
+            selRes = {color, type:t}; sel = null;
+            top.querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));
+            bottom.querySelectorAll(".sel").forEach(x=>x.classList.remove("sel"));
+            tile.classList.add("sel");
+          }
+          beginPieceDrag({kind:"std", code: color+t}, "palette", e, tile);
+        });
+        el.appendChild(tile);
+      });
+    };
+    fill(top, "b"); fill(bottom, "w");
+  }
+
+  function renderChrome(){
+    const free = modeId === "free", ref = refereed();
+    document.querySelectorAll(".freeOnly").forEach(e => e.classList.toggle("hidden", !free));
+    document.querySelectorAll(".gameOnly").forEach(e => e.classList.toggle("hidden", free));
+    document.querySelectorAll(".looseOnly").forEach(e => e.classList.toggle("hidden", ref));
+    document.querySelectorAll(".refOnly").forEach(e => e.classList.toggle("hidden", !ref));
+    $("btnUndo").disabled = !ref || history.length === 0;
+    $("btnUndo").classList.toggle("hidden", free || !ref);
+  }
+
+  function refresh(){ renderChrome(); renderSquares(); renderPieces(); renderShapes(); renderSpares(); renderStatus(); }
+
+  // ---- Annotation toggling ----
   function toggleArrow(from,to,color){
     const i = shapes.findIndex(s=>s.type==="arrow" && s.from===from && s.to===to);
     if(i>=0){ if(shapes[i].color===color) shapes.splice(i,1); else shapes[i].color=color; }
@@ -393,13 +877,12 @@
     const r = boardEl.getBoundingClientRect();
     const x = cx - r.left, y = cy - r.top;
     if(x < 0 || y < 0 || x > r.width || y > r.height) return null;
-    const col = Math.max(0, Math.min(7, Math.floor(x / (r.width/8))));
-    const row = Math.max(0, Math.min(7, Math.floor(y / (r.height/8))));
+    const col = Math.max(0, Math.min(N-1, Math.floor(x / (r.width/N))));
+    const row = Math.max(0, Math.min(N-1, Math.floor(y / (r.height/N))));
     return rcToSq(row, col);
   }
   function squareFromEvent(e){ return squareFromPoint(e.clientX, e.clientY); }
 
-  // Selected annotation colour: used on touch, and on mouse when no modifier is held.
   let currentColor = "green";
   function colorFromMods(e){
     if(e.ctrlKey || e.metaKey) return "red";
@@ -407,27 +890,20 @@
     return currentColor;
   }
 
-  // ---- Drag (pieces) + draw (arrows), unified pointer handling ----
+  /* =====================================================================
+     POINTER HANDLING — drag pieces, tap-tap moves, draw annotations
+     ===================================================================== */
   let active = null;   // {kind:"piece"|"arrow", ...}
   let ghost = null;
 
-  function squarePx(){ return boardEl.getBoundingClientRect().width/8; }
+  function squarePx(){ return boardEl.getBoundingClientRect().width/N; }
 
   function makeGhost(piece){
     const size = squarePx();
     const g = document.createElement("div");
     g.className = "ghost";
     g.style.width = size+"px"; g.style.height = size+"px";
-    if(piece.kind === "std"){
-      g.classList.add(piece.code[0]==="w" ? "w":"b");
-      const s = document.createElement("span");
-      s.className = "g"; s.textContent = GLYPH[piece.code[1]];
-      s.style.fontSize = (size*0.78)+"px";
-      g.appendChild(s);
-    } else {
-      const img = document.createElement("img"); img.src = piece.src; img.alt="";
-      g.appendChild(img);
-    }
+    fillPiece(g, piece, size*0.78);
     document.body.appendChild(g);
     ghost = g;
   }
@@ -447,8 +923,58 @@
     e.preventDefault();
   }
 
+  function canLift(sq){
+    const p = model[sq];
+    if(!p) return false;
+    if(!refereed()) return true;
+    return game.phase === "move" && colorOf(p) === game.turn;
+  }
+  // Take a piece off its square and start dragging it.
+  function lift(sq, e, pointerId){
+    const piece = model[sq];
+    if(refereed()){ sel = {sq, targets:movesFrom(sq)}; selRes = null; }
+    delete model[sq];
+    renderPieces();
+    active = {kind:"piece", piece, origin:sq, pointerId};
+    makeGhost(piece); moveGhost(e);
+    renderShapes();
+  }
+  // Release the dragged piece on `sq` (null = outside the board).
+  function dropActive(a, sq){
+    if(!refereed()){
+      if(sq) model[sq] = a.piece;                 // free play: off-board = removed
+      renderPieces();
+      return;
+    }
+    if(a.origin === "palette"){
+      if(sq && !model[sq]) doAction({t:"place", type:a.piece.code[1], to:sq});
+      return;
+    }
+    model[a.origin] = a.piece;
+    if(sq && sq !== a.origin && sel && sel.targets.includes(sq)){
+      doAction({t:"move", from:a.origin, to:sq});
+    } else {
+      if(sq !== a.origin) sel = null;             // dropped back on its square = stays selected
+      renderPieces(); renderShapes();
+    }
+  }
+  // A plain click/tap on a square in a refereed game. Returns true if it played something.
+  function boardTap(sq){
+    if(!refereed() || game.phase === "over") return false;
+    if(game.phase === "place"){
+      if(selRes && !model[sq]) return doAction({t:"place", type:selRes.type, to:sq});
+      return false;
+    }
+    if(sel && sel.targets.includes(sq)) return doAction({t:"move", from:sel.sq, to:sq});
+    return false;
+  }
+  function selectSquare(sq){
+    sel = canLift(sq) ? {sq, targets:movesFrom(sq)} : null;
+    renderShapes();
+  }
+
   // ---- Touch state: two fingers = annotation gesture, one finger = piece ----
-  const touchPts = new Map();   // currently active touch pointers
+  const touchPts = new Map();
   let pending = null;           // first touch, decision deferred (piece vs. arrow)
   function clearAnnotations(){ shapes = []; renderShapes(); }
 
@@ -457,21 +983,26 @@
     renderShapes({type:"hl", square:anchorSq, color:currentColor});
     e.preventDefault();
   }
+  function abortPieceDrag(){
+    if(active && active.kind === "piece"){
+      if(active.origin !== "palette") model[active.origin] = active.piece;
+      killGhost(); renderPieces();
+    }
+  }
 
   boardEl.addEventListener("contextmenu", e=>e.preventDefault());
 
   boardEl.addEventListener("pointerdown", function(e){
     // ===================== TOUCH =====================
     if(e.pointerType === "touch"){
-      if(active && active.kind === "piece" && active.origin === "palette") return; // palette drag in progress
+      if(active && active.kind === "piece" && active.origin === "palette") return;
       touchPts.set(e.pointerId, {x:e.clientX, y:e.clientY});
 
       if(touchPts.size >= 2){                       // second finger -> annotation mode
         if(!(active && active.kind === "arrow" && active.touch)){
           let anchorSq = null;
-          if(active && active.kind === "piece"){      // abort a just-started piece drag
-            if(active.origin !== "palette") model[active.origin] = active.piece;
-            killGhost(); renderPieces();
+          if(active && active.kind === "piece"){
+            abortPieceDrag();
             anchorSq = active.origin; active = null;
           }
           if(!anchorSq && pending) anchorSq = pending.startSq;
@@ -485,10 +1016,9 @@
         return;
       }
 
-      // first finger -> defer (a real move = piece drag; a 2nd finger = arrow)
       const sq = squareFromEvent(e);
       if(sq === null) return;
-      pending = {id:e.pointerId, startSq:sq, x:e.clientX, y:e.clientY, piece: model[sq] || null, moved:false};
+      pending = {id:e.pointerId, startSq:sq, x:e.clientX, y:e.clientY, liftable:canLift(sq), moved:false};
       try{ boardEl.setPointerCapture(e.pointerId); }catch(_){}
       e.preventDefault();
       return;
@@ -505,23 +1035,22 @@
       e.preventDefault();
       return;
     }
-    if(e.button === 0){                            // left -> piece / clear annotations
+    if(e.button === 0){                            // left -> play / lift / clear annotations
       const sq = squareFromEvent(e);
       if(sq === null) return;
       clearAnnotations();
-      if(model[sq]){
-        const piece = model[sq];
-        delete model[sq];
-        renderPieces();
-        beginPieceDrag(piece, sq, e, boardEl);
-      }
+      if(boardTap(sq)) return;
+      if(canLift(sq)){
+        lift(sq, e, e.pointerId);
+        try{ boardEl.setPointerCapture(e.pointerId); }catch(_){}
+        e.preventDefault();
+      } else if(refereed()){ sel = null; renderShapes(); }
     }
   });
 
   window.addEventListener("pointermove", function(e){
     if(touchPts.has(e.pointerId)) touchPts.set(e.pointerId, {x:e.clientX, y:e.clientY});
 
-    // touch arrow: the "pen" finger sets the destination
     if(active && active.kind === "arrow" && active.touch){
       if(e.pointerId === active.penId){
         const sq = squareFromEvent(e) || active.to;
@@ -538,15 +1067,12 @@
     if(pending && e.pointerId === pending.id && !active){
       const dist = Math.hypot(e.clientX - pending.x, e.clientY - pending.y);
       if(dist > 7){
-        if(pending.piece){
+        if(pending.liftable && model[pending.startSq]){
           clearAnnotations();
-          const piece = pending.piece, origin = pending.startSq;
-          delete model[origin]; renderPieces();
-          active = {kind:"piece", piece, origin, pointerId:pending.id};
-          makeGhost(piece); moveGhost(e);
+          lift(pending.startSq, e, pending.id);
           pending = null;
         } else {
-          pending.moved = true;   // dragging an empty square -> no piece to lift
+          pending.moved = true;
         }
       }
       return;
@@ -555,7 +1081,7 @@
     if(!active || e.pointerId !== active.pointerId) return;
     if(active.kind === "piece"){
       moveGhost(e);
-    } else if(active.kind === "arrow"){       // mouse arrow preview
+    } else if(active.kind === "arrow"){
       const sq = squareFromEvent(e) || active.from;
       active.to = sq;
       active.color = colorFromMods(e);
@@ -569,72 +1095,54 @@
   window.addEventListener("pointerup", function(e){
     if(e.pointerType === "touch") touchPts.delete(e.pointerId);
 
-    // touch arrow: finalize as soon as one of its fingers lifts
     if(active && active.kind === "arrow" && active.touch){
       const to = active.to || active.from;
       if(to === active.from) toggleHl(active.from, active.color);
       else toggleArrow(active.from, to, active.color);
-      renderShapes();
       active = null; pending = null;
+      renderShapes();
       try{ boardEl.releasePointerCapture(e.pointerId); }catch(_){}
       return;
     }
 
-    // deferred first finger lifted with no move and no 2nd finger -> tap clears annotations
+    // first finger lifted without moving: a tap
     if(pending && e.pointerId === pending.id && !active){
-      if(!pending.moved) clearAnnotations();
-      pending = null;
+      const p = pending; pending = null;
+      if(!p.moved){
+        clearAnnotations();
+        if(refereed() && !boardTap(p.startSq)) selectSquare(p.startSq);
+      }
       try{ boardEl.releasePointerCapture(e.pointerId); }catch(_){}
       return;
     }
 
     if(!active || e.pointerId !== active.pointerId) return;
-    if(active.kind === "piece"){
-      const sq = squareFromEvent(e);
-      if(sq){ model[sq] = active.piece; }     // drop; off-board -> discarded
-      killGhost(); renderPieces();
-    } else if(active.kind === "arrow"){        // mouse arrow
-      const to = squareFromEvent(e) || active.from;
+    const a = active;
+    if(a.kind === "piece"){
+      killGhost();
+      active = null;
+      dropActive(a, squareFromEvent(e));
+    } else if(a.kind === "arrow"){
+      const to = squareFromEvent(e) || a.from;
       const color = colorFromMods(e);
-      if(to === active.from) toggleHl(active.from, color);
-      else toggleArrow(active.from, to, color);
+      if(to === a.from) toggleHl(a.from, color);
+      else toggleArrow(a.from, to, color);
+      active = null;
       renderShapes();
     }
     try{ boardEl.releasePointerCapture(e.pointerId); }catch(_){}
     active = null; pending = null;
   });
+
   window.addEventListener("pointercancel", function(e){
     if(e.pointerType === "touch") touchPts.delete(e.pointerId);
     if(active && active.kind === "piece" && e.pointerId === active.pointerId){
-      if(active.origin !== "palette") model[active.origin] = active.piece;
-      killGhost(); renderPieces(); active = null;
+      abortPieceDrag(); active = null; renderShapes();
     } else if(active && active.kind === "arrow"){
-      renderShapes(); active = null;
+      active = null; renderShapes();
     }
     pending = null;
   });
-
-  // ---- Spare pieces ----
-  function buildSpare(el, color){
-    el.innerHTML = "";
-    ["K","Q","R","B","N","P"].forEach(t=>{
-      const tile = document.createElement("div");
-      tile.className = "piece-tile";
-      const g = document.createElement("span");
-      g.className = "g";
-      g.textContent = GLYPH[t];
-      g.style.color = color==="w" ? "#fafafa" : "#2a2a2a";
-      g.style.webkitTextStroke = color==="w" ? "1.5px #3a3a3a" : "1px #0a0a0a";
-      tile.appendChild(g);
-      tile.addEventListener("pointerdown", e=>{
-        if(e.button !== 0 || active) return;
-        beginPieceDrag({kind:"std", code: color+t}, "palette", e, tile);
-      });
-      el.appendChild(tile);
-    });
-  }
-  buildSpare(document.getElementById("spareTop"), "b");
-  buildSpare(document.getElementById("spareBottom"), "w");
 
   // ---- Project pieces (committed to the repo, available on every device) ----
   function renderProjectTray(items){
@@ -652,7 +1160,7 @@
       tile.style.backgroundImage = `url("${src}")`;
       tile.title = src.split("/").pop();
       tile.addEventListener("pointerdown", e=>{
-        if(e.button !== 0 || active) return;
+        if(e.button !== 0 || active || refereed()) return;
         beginPieceDrag({kind:"img", src}, "palette", e, tile);
       });
       projectTrayEl.appendChild(tile);
@@ -696,7 +1204,7 @@
       });
       tile.appendChild(x);
       tile.addEventListener("pointerdown", e=>{
-        if(e.button !== 0 || active) return;
+        if(e.button !== 0 || active || refereed()) return;
         beginPieceDrag({kind:"img", src:item.src}, "palette", e, tile);
       });
       trayEl.appendChild(tile);
@@ -712,8 +1220,8 @@
     }catch(_){ custom = []; }
   }
 
-  document.getElementById("btnUpload").addEventListener("click", ()=>document.getElementById("fileInput").click());
-  document.getElementById("fileInput").addEventListener("change", function(e){
+  $("btnUpload").addEventListener("click", ()=>$("fileInput").click());
+  $("fileInput").addEventListener("change", function(e){
     const files = Array.from(e.target.files || []);
     let remaining = files.length;
     if(!remaining) return;
@@ -739,34 +1247,48 @@
       model[f+"2"] = {kind:"std", code:"wP"};
       model[f+"1"] = {kind:"std", code:"w"+back[i]};
     });
-    shapes = []; sideToMove = "w"; document.getElementById("sideToMove").value = "w";
-    fullRender();
+    shapes = []; sideToMove = "w"; $("sideToMove").value = "w";
+    refresh();
   }
-  document.getElementById("btnStart").addEventListener("click", startPosition);
-  document.getElementById("btnClear").addEventListener("click", ()=>{ model = {}; shapes = []; fullRender(); });
-  document.getElementById("btnFlip").addEventListener("click", ()=>{ orientation = orientation==="white" ? "black":"white"; fullRender(); });
-  document.getElementById("btnAnnos").addEventListener("click", ()=>{ shapes = []; renderShapes(); });
+  $("btnStart").addEventListener("click", startPosition);
+  $("btnClear").addEventListener("click", ()=>{ model = {}; shapes = []; refresh(); });
+  $("btnFlip").addEventListener("click", ()=>{ orientation = orientation==="white" ? "black":"white"; refresh(); });
+  $("btnAnnos").addEventListener("click", ()=>{ shapes = []; renderShapes(); });
+  $("btnNew").addEventListener("click", newGame);
+  $("btnUndo").addEventListener("click", ()=>{
+    if(!refereed() || !history.length) return;
+    restore(history.pop());
+    sel = null; selRes = null; shapes = [];
+    refresh();
+  });
 
-  // Colour selector (drives touch annotations; mouse modifiers Ctrl/Alt still override)
-  const colorPick = document.getElementById("colorPick");
+  MODE_ORDER.forEach(id=>{
+    const o = document.createElement("option"); o.value = id; o.textContent = MODES[id].name; modeSel.appendChild(o);
+  });
+  modeSel.addEventListener("change", ()=>setMode(modeSel.value, 0));
+  variantSel.addEventListener("change", ()=>setMode(modeId, Number(variantSel.value)));
+  $("chkReferee").addEventListener("change", e=>{ refereeOn = e.target.checked; if(game) newGame(); });
+  $("chkSkins").addEventListener("change", e=>{ showSkins = e.target.checked; renderPieces(); });
+
+  const colorPick = $("colorPick");
   colorPick.addEventListener("click", e=>{
     const b = e.target.closest(".chip"); if(!b) return;
     currentColor = b.dataset.color;
     colorPick.querySelectorAll(".chip").forEach(c=>c.classList.toggle("active", c===b));
   });
 
-  // ---- FEN ----
-  const fenInput = document.getElementById("fenInput");
-  const sideSel  = document.getElementById("sideToMove");
+  // ---- FEN (free mode only) ----
+  const fenInput = $("fenInput");
+  const sideSel  = $("sideToMove");
   sideSel.addEventListener("change", ()=>{ sideToMove = sideSel.value; updateFen(); });
 
   function updateFen(){
+    if(modeId !== "free") return;
     let rows = [];
     for(let rank=8; rank>=1; rank--){
       let row = "", empty = 0;
       for(let i=0;i<8;i++){
-        const sq = FILES[i]+rank;
-        const p = model[sq];
+        const p = model[FILES[i]+rank];
         if(p && p.kind === "std"){
           if(empty){ row += empty; empty = 0; }
           row += p.code[0]==="w" ? p.code[1] : p.code[1].toLowerCase();
@@ -801,11 +1323,11 @@
       model = next; shapes = [];
       const tok = str.trim().split(/\s+/)[1];
       if(tok === "w" || tok === "b"){ sideToMove = tok; sideSel.value = tok; }
-      fullRender();
+      refresh();
       toast("Position chargée");
     }catch(_){ toast("FEN invalide", true); }
   }
-  document.getElementById("btnLoadFen").addEventListener("click", ()=>loadFen(fenInput.value));
+  $("btnLoadFen").addEventListener("click", ()=>loadFen(fenInput.value));
   fenInput.addEventListener("keydown", e=>{ if(e.key==="Enter") loadFen(fenInput.value); });
 
   // ---- Toast ----
@@ -822,7 +1344,15 @@
   loadCustom();
   renderTray();
   loadProjectPieces();
-  startPosition();
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(MODE_KEY) || "null"); }catch(_){}
+  setMode(saved && MODES[saved.id] ? saved.id : "free", saved ? saved.v : 0);
+
+  // Small handle for tests and for a future online mode.
+  window.__echiquier = {
+    setMode, doAction,
+    state: () => ({modeId, N, model, game, sel, selRes, history:history.length})
+  };
 })();
 </script>
 </body>
