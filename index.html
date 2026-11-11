@@ -964,6 +964,110 @@
       opacity: .55;
       cursor: default;
     }
+
+    /* ---------- Mad, le bot ---------- */
+    .bot-ctl {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bot-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink-soft);
+    }
+
+    .bot-card {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #fffaf0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 9px 13px;
+    }
+
+    .bot-avatar {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      overflow: hidden;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bot-avatar b {
+      font-family: var(--serif);
+      font-size: 24px;
+      font-style: italic;
+      color: #fffaf0;
+    }
+
+    .bot-avatar img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .bot-avatar.has-img b {
+      display: none;
+    }
+
+    .bot-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .bot-name {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .3px;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+    }
+
+    .bot-name i {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .bot-line {
+      font-size: 14.5px;
+      line-height: 1.35;
+      color: var(--ink);
+    }
+
+    .bot-card.thinking .bot-avatar {
+      animation: bot-think 1s ease-in-out infinite;
+    }
+
+    @keyframes bot-think {
+      50% {
+        transform: scale(.92);
+        opacity: .75;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .bot-card.thinking .bot-avatar {
+        animation: none;
+      }
+    }
   </style>
 </head>
 
@@ -1443,16 +1547,15 @@
         end(o, t || `${mode.sides[side]} : aucun coup possible.`);
       }
 
-      // Every change to a refereed game goes through here: one small serialisable action.
-      // (This is also the hook an online mode would use: send the action, replay it on the other side.)
-      function doAction(a) {
+      // Les règles pures : applique une action à `model` et `game`, sans affichage ni historique.
+      // Sert au jeu normal (via doAction) et à la réflexion du bot, qui essaie des coups puis les défait.
+      function applyAction(a) {
         if (!refereed() || game.phase === "over") return false;
         const side = game.turn;
-        game.note = "";
         if (a.t === "place") {
           const i = game.reserve[side].indexOf(a.type);
-          if (game.phase !== "place" || i < 0 || !a.to || model[a.to]) { refresh(); return false; }
-          history.push(snapshot());
+          if (game.phase !== "place" || i < 0 || !a.to || model[a.to]) return false;
+          game.note = "";
           game.reserve[side].splice(i, 1);
           model[a.to] = { kind: "std", code: side + a.type };
           game.last = { to: a.to };
@@ -1463,8 +1566,8 @@
           }
         } else if (a.t === "move") {
           const piece = model[a.from];
-          if (game.phase !== "move" || colorOf(piece) !== side || !movesFrom(a.from).includes(a.to)) { refresh(); return false; }
-          history.push(snapshot());
+          if (game.phase !== "move" || colorOf(piece) !== side || !movesFrom(a.from).includes(a.to)) return false;
+          game.note = "";
           const captured = model[a.to];
           delete model[a.from];
           model[a.to] = piece;
@@ -1486,11 +1589,43 @@
             afterTurnChange();
           }
         } else return false;
-        sel = null; selRes = null;
-        refresh();
-        emit("change", { action: a });
         return true;
       }
+
+      // Every change to a refereed game goes through here: one small serialisable action.
+      // (This is also the hook the online mode uses: send the action, replay it on the other side.)
+      function doAction(a) {
+        if (!refereed() || game.phase === "over") return false;
+        const before = snapshot();
+        const captured = a.t === "move" && !!model[a.to];
+        if (!applyAction(a)) { refresh(); return false; }
+        history.push(before);
+        sel = null; selRes = null;
+        refresh();
+        emit("change", { action: a, captured });
+        return true;
+      }
+      // Toutes les actions permises pour le camp au trait.
+      function legalActions() {
+        if (!refereed() || game.phase === "over") return [];
+        const side = game.turn, out = [];
+        if (game.phase === "place") {
+          const types = [...new Set(game.reserve[side])];
+          for (let f = 0; f < N; f++) for (let r = 1; r <= N; r++) {
+            const sq = FILES[f] + r;
+            if (!model[sq]) types.forEach(type => out.push({ t: "place", type, to: sq }));
+          }
+          return out;
+        }
+        for (const from of piecesOf(side)) for (const to of movesFrom(from)) out.push({ t: "move", from, to });
+        return out;
+      }
+      // Copie légère de la partie, pour essayer des coups puis revenir en arrière (les pièces ne sont jamais modifiées).
+      const sim = {
+        save: () => ({ model: { ...model }, game: { ...game, reserve: { w: game.reserve.w.slice(), b: game.reserve.b.slice() } } }),
+        load: s => { model = s.model; game = s.game; },
+        apply: applyAction, actions: legalActions, movesFrom, piecesOf
+      };
 
       function newGame() {
         model = {}; shapes = []; history = []; sel = null; selRes = null;
@@ -2181,13 +2316,15 @@
       $("btnFlip").addEventListener("click", () => { orientation = orientation === "white" ? "black" : "white"; refresh(); });
       $("btnAnnos").addEventListener("click", clearAnnotations);
       $("btnNew").addEventListener("click", newGame);
-      $("btnUndo").addEventListener("click", () => {
-        if (!refereed() || !history.length) return;
+      function undo() {
+        if (!refereed() || !history.length) return false;
         restore(history.pop());
         sel = null; selRes = null; shapes = [];
         refresh();
-        emit("change");
-      });
+        emit("change", { undo: true });
+        return true;
+      }
+      $("btnUndo").addEventListener("click", undo);
 
       MODE_ORDER.forEach(id => {
         const o = document.createElement("option"); o.value = id; o.textContent = MODES[id].name; modeSel.appendChild(o);
@@ -2279,7 +2416,7 @@
       // Interface utilisée par les modules à côté (net.js pour le jeu en ligne) et par les tests.
       window.Echiquier = window.__echiquier = {
         MODES, on, guards, statusExtras,
-        setMode, doAction, newGame, refresh, toast,
+        setMode, doAction, newGame, undo, refresh, toast, sim, VALUE,
         exportState, importState,
         getShapes: () => JSON.parse(JSON.stringify(shapes)), setShapes,
         setOrientation: o => { orientation = o === "black" ? "black" : "white"; refresh(); },
@@ -2289,6 +2426,7 @@
     })();
   </script>
   <script src="net.js"></script>
+  <script src="bot.js"></script>
 </body>
 
 </html>
