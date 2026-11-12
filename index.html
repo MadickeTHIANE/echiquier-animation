@@ -1451,6 +1451,37 @@
       const MODES = {
         free: { name: "Animation libre", size: 8 },
 
+        pions: {
+          name: "Bataille de pions",
+          size: 8, first: "w",
+          sides: { w: "Blancs", b: "Noirs" },
+          turnText: { w: "Aux Blancs de jouer", b: "Aux Noirs de jouer" },
+          goals: { reach: { side: "any", type: "P" } }, stuck: "count",
+          winText: {
+            reach: "Un pion a atteint la dernière rangée adverse.",
+            captureAll: { w: "Les Blancs ont capturé tous les pions noirs.", b: "Les Noirs ont capturé tous les pions blancs." }
+          },
+          variants: [
+            {
+              name: "8 pions par camp",
+              setup: ["a2 wP", "b2 wP", "c2 wP", "d2 wP", "e2 wP", "f2 wP", "g2 wP", "h2 wP",
+                "a7 bP", "b7 bP", "c7 bP", "d7 bP", "e7 bP", "f7 bP", "g7 bP", "h7 bP"]
+            },
+            {
+              name: "4 pions liés par camp",
+              setup: ["c2 wP", "d2 wP", "e2 wP", "f2 wP", "c7 bP", "d7 bP", "e7 bP", "f7 bP"]
+            }
+          ],
+          rules: [
+            "<b>Mise en place :</b> les pions blancs sur la 2e rangée, les pions noirs sur la 7e. Les Blancs commencent.",
+            "<b>Le pion</b> avance d'une case tout droit (de deux cases, s'il le veut, pour son premier coup) et capture en diagonale.",
+            "<b>But :</b> être le premier à amener un pion sur la dernière rangée adverse.",
+            "<b>Blocage :</b> si le joueur dont c'est le tour ne peut plus bouger, celui qui a le plus de pions gagne. À égalité, la partie est nulle.",
+            "La prise en passant n'est pas utilisée dans ce jeu."
+          ],
+          // Source (non affichée) : « Apprendre facilement les échecs à votre enfant » V2, jeu « bataille de pion ».
+        },
+
         mousquetaires: {
           name: "Les 4 Mousquetaires · échiquier de 16 cases",
           size: 4, first: "w",
@@ -1570,7 +1601,7 @@
           ]
         }
       };
-      const MODE_ORDER = ["free", "mousquetaires", "loup", "sanglier", "dalton", "jument"];
+      const MODE_ORDER = ["free", "pions", "mousquetaires", "loup", "sanglier", "dalton", "jument"];
 
       const $ = id => document.getElementById(id);
       const boardEl = $("board");
@@ -1740,6 +1771,13 @@
         if (hasMoves(side)) return;
         const o = other(side);
         if (mode.stuck === "points") { endByPoints(`${mode.sides[side]} : aucun coup possible.`); return; }
+        if (mode.stuck === "count") {            // blocage : celui qui a le plus de pièces gagne
+          const w = piecesOf("w").length, b = piecesOf("b").length;
+          const lead = `Les ${mode.sides[side]} sont bloqués. ${mode.sides.w} ${w}, ${mode.sides.b} ${b} : `;
+          if (w === b) end(null, lead + "partie nulle.");
+          else end(w > b ? "w" : "b", lead + `les ${mode.sides[w > b ? "w" : "b"]} gagnent.`);
+          return;
+        }
         if (mode.stuck === "pass") {
           if (hasMoves(o)) { game.note = `${mode.sides[side]} ne peuvent pas bouger : ils passent leur tour.`; game.turn = o; }
           else end(null, "Plus aucun coup possible : partie nulle.");
@@ -1780,7 +1818,7 @@
           const tg = g.target;
           if (tg && tg.side === side && piece.code[1] === tg.type && a.to === tg.square) {
             end(side, wt.target || "Objectif atteint.");
-          } else if (g.reach && g.reach.side === side && piece.code[1] === g.reach.type && rankOf(a.to) === lastRank) {
+          } else if (g.reach && (g.reach.side === side || g.reach.side === "any") && piece.code[1] === g.reach.type && rankOf(a.to) === lastRank) {
             end(side, wt.reach || "Objectif atteint.");
           } else if (piecesOf(other(side)).length === 0) {
             end(side, (wt.captureAll && wt.captureAll[side]) || "Toutes les pièces adverses sont capturées.");
@@ -1873,7 +1911,9 @@
         }
         variantSel.classList.toggle("hidden", !mode.variants);
         $("refWrap").classList.toggle("hidden", modeId === "free" || !!mode.refereeOff);
-        $("skinWrap").classList.toggle("hidden", modeId === "free" || !!mode.placement);
+        const setupLines = (variant && variant.setup) || mode.setup || [];
+        const hasSkins = setupLines.some(line => line.split(" ").length > 2);
+        $("skinWrap").classList.toggle("hidden", modeId === "free" || !hasSkins);
 
         $("rulesBody").innerHTML = modeId === "free" ? "" :
           "<ul>" + mode.rules.map(r => `<li>${r}</li>`).join("") + "</ul>";

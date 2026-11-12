@@ -60,23 +60,23 @@
     const st = E.state(), model = st.model, N = st.N, g = E.mode().goals || {};
     let s = 0;
     const reach = g.reach;
-    let best = 0, sum = 0;
+    const best = { w: 0, b: 0 }, sum = { w: 0, b: 0 };
     for (const sq in model) {
       const p = model[sq];
       if (p.kind !== "std") continue;
       const c = p.code[0], t = p.code[1];
       const v = (E.VALUE[t] || 0) * 100;
       s += c === "w" ? v : -v;
-      if (reach && c === reach.side && t === reach.type) {
+      if (reach && (reach.side === c || reach.side === "any") && t === reach.type) {
         const rank = Number(sq.slice(1));
         const adv = c === "w" ? rank - 1 : N - rank;
-        if (adv > best) best = adv;
-        sum += adv;
+        if (adv > best[c]) best[c] = adv;
+        sum[c] += adv;
       }
     }
-    if (reach) {
-      const bonus = best * best * 12 + sum * 6;      // un pion avancé vaut de plus en plus cher
-      s += reach.side === "w" ? bonus : -bonus;
+    if (reach) {                                     // un pion avancé vaut de plus en plus cher
+      s += best.w * best.w * 12 + sum.w * 6;
+      s -= best.b * best.b * 12 + sum.b * 6;
     }
     return s;
   }
@@ -201,6 +201,7 @@
     soloStuck: ["Bloqué ! Annule un coup ou recommence."]
   };
   const TIPS = {
+    pions: "Astuce : un pion tout seul se fait prendre, avance-les ensemble.",
     dalton: "Astuce : des pions qui se protègent avancent ensemble.",
     loup: "Astuce : le loup doit choisir, il ne peut pas tout garder.",
     sanglier: "Astuce : regarde les diagonales des chasseurs avant de sauter.",
