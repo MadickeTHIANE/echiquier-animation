@@ -25,6 +25,7 @@
 
   const E = window.Echiquier;
   if (!E) return;
+  if (!E.acces.bot) return;            // pas encore publié (voir ECHIQUIER_PUBLIE dans index.html)
 
   const AVATARS = {
     neutre: "pieces/mad-neutre.png", malin: "pieces/mad-malin.png", etonne: "pieces/mad-etonne.png",

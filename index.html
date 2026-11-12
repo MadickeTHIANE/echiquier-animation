@@ -6,12 +6,49 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Échiquier d'animation — Échecs et Mad</title>
   <script>
-    // Thème appliqué avant l'affichage : choix enregistré, sinon réglage du système.
+    /* =====================================================================
+       CE QUI EST PUBLIÉ
+       Tout le code est déjà là : cette liste décide seulement de ce que le
+       public voit. Publier une nouveauté = modifier une ligne ci-dessous.
+       (L'ordre du menu ne dépend pas de l'ordre de cette liste.)
+       ===================================================================== */
+    window.ECHIQUIER_PUBLIE = {
+      modes: [
+        "free"
+      ],
+      niveauxMousquetaires: 1,
+      enLigne: false,
+      charte: false,
+      bot: false
+    };
+  </script>
+  <script>
+    // Accès complet pour l'animateur, sur cet appareil : ouvrir une fois le site avec ?acces=complet
+    // (et ?acces=public pour revenir à ce que voit le public).
     (function () {
-      var t = null;
-      try { t = localStorage.getItem("echecs-mad-theme"); } catch (e) { }
-      if (t !== "light" && t !== "dark") {
-        t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      var KEY = "echecs-mad-acces", complet = false;
+      try {
+        var q = new URLSearchParams(location.search).get("acces");
+        if (q === "complet") localStorage.setItem(KEY, "complet");
+        if (q === "public") localStorage.removeItem(KEY);
+        complet = localStorage.getItem(KEY) === "complet";
+      } catch (e) { }
+      var P = window.ECHIQUIER_PUBLIE || {};
+      window.ECHIQUIER_ACCES = complet
+        ? { complet: true, modes: null, niveauxMousquetaires: 99, enLigne: true, charte: true, bot: true }
+        : {
+          complet: false, modes: P.modes || ["free"], niveauxMousquetaires: P.niveauxMousquetaires || 1,
+          enLigne: !!P.enLigne, charte: !!P.charte, bot: !!P.bot
+        };
+
+      // Thème appliqué avant l'affichage. Sans la charte graphique : thème clair d'origine.
+      var t = "light";
+      if (window.ECHIQUIER_ACCES.charte) {
+        document.documentElement.classList.add("charte");
+        try { t = localStorage.getItem("echecs-mad-theme"); } catch (e) { }
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
       }
       document.documentElement.setAttribute("data-theme", t);
     })();
@@ -72,8 +109,8 @@
       --red: #e23636;
       --blue: #3b7ddd;
       --shadow: 0 10px 30px -12px rgba(33, 28, 22, .35);
-      --sans: "Poppins", ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --serif: var(--sans);        /* les titres utilisent aussi Poppins */
+      --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+      --sans: ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
       /* Couleurs par rôle : ce sont elles que le thème sombre redéfinit */
       --page-bg: radial-gradient(1200px 600px at 80% -10%, #fbf7ee 0%, rgba(251, 247, 238, 0) 60%), linear-gradient(180deg, #f6f1e8 0%, #efe7d8 100%);
@@ -103,6 +140,12 @@
       --side-line: #3a3a3a;
       --wait: #e0a526;
       color-scheme: light;
+    }
+
+    /* Charte graphique : Poppins partout (titres compris) */
+    :root.charte {
+      --sans: "Poppins", ui-sans-serif, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --serif: var(--sans);
     }
 
     /* Thème sombre : charte graphique Échecs et Mad */
@@ -185,15 +228,23 @@
     header h1 {
       font-family: var(--serif);
       font-weight: 600;
-      font-size: clamp(19px, 3.2vw, 26px);
-      letter-spacing: 0;
+      font-size: clamp(20px, 3.4vw, 28px);
+      letter-spacing: .2px;
       margin: 0;
     }
 
-    /* Mots mis en avant : Poppins gras italique */
+    .charte header h1 {
+      font-size: clamp(19px, 3.2vw, 26px);
+      letter-spacing: 0;
+    }
+
     header h1 .accent {
       color: var(--accent);
       font-style: italic;
+    }
+
+    /* Charte : mots mis en avant en Poppins gras italique */
+    .charte header h1 .accent {
       font-weight: 700;
     }
 
@@ -1267,6 +1318,21 @@
       box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .3);
     }
 
+    /* ---------- Publication progressive ---------- */
+    .rules .src {
+      margin: 6px 0 0;
+      font-size: 12px;
+      font-style: italic;
+    }
+
+    .acces-pill {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--on-accent);
+      background: var(--accent);
+      border-radius: 999px;
+      padding: 3px 9px;
+    }
   </style>
 </head>
 
@@ -1478,7 +1544,7 @@
             "<b>Blocage :</b> si le joueur dont c'est le tour ne peut plus bouger, celui qui a le plus de pions gagne. À égalité, la partie est nulle.",
             "La prise en passant n'est pas utilisée dans ce jeu."
           ],
-          // Source (non affichée) : « Apprendre facilement les échecs à votre enfant » V2, jeu « bataille de pion ».
+          source: "« Apprendre facilement les échecs à votre enfant » V2, jeu « bataille de pion »."
         },
 
         mousquetaires: {
@@ -1533,7 +1599,7 @@
             }
           ],
           rules: [],
-          // Source (non affichée) : Valeur des pièces : « Animations ludiques autour du jeu d'échecs » v5 et Cahier Débutant 2 (La valeur des pièces).
+          source: "Valeur des pièces : « Animations ludiques autour du jeu d'échecs » v5 et Cahier Débutant 2 (La valeur des pièces)."
         },
 
         loup: {
@@ -1559,7 +1625,7 @@
             "<b>Le loup</b> se déplace comme une dame. Il gagne s'il capture tous les moutons ou s'il les bloque.",
             "<b>En initiation,</b> les moutons ne capturent pas en diagonale (variante à choisir dans le menu)."
           ],
-          // Source (non affichée) : Fiche animation n°1 « Le Loup et les Moutons », J. Cappon.
+          source: "Fiche animation n°1 « Le Loup et les Moutons », J. Cappon."
         },
 
         sanglier: {
@@ -1585,7 +1651,7 @@
             "<b>Les chasseurs</b> gagnent s'ils capturent le sanglier.",
             "Partie sans roi, les pièces jouent normalement. <b>Progression :</b> un 3e chasseur en a8, puis un 4e en h8."
           ],
-          // Source (non affichée) : Fiche animation n°2 « Les Chasseurs et le Sanglier », J. Cappon.
+          source: "Fiche animation n°2 « Les Chasseurs et le Sanglier », J. Cappon."
         },
 
         dalton: {
@@ -1608,7 +1674,7 @@
             "<b>Lucky Luke</b> se déplace comme une tour. Il gagne s'il capture les quatre Dalton.",
             "<b>À faire émerger :</b> les pions isolés sont des faiblesses, les pions liés se défendent entre eux."
           ],
-          // Source (non affichée) : Jeu de Madické Thiane, mémoire DAFFE « L'apprentissage par le jeu ».
+          source: "Jeu de Madické Thiane, mémoire DAFFE « L'apprentissage par le jeu »."
         },
 
         opposition: {
@@ -1630,7 +1696,7 @@
             "<b>Répétition :</b> si la même position revient trois fois, les Noirs gagnent. Les Blancs doivent donc forcer le passage.",
             "<b>À faire émerger :</b> l'opposition. Quand deux rois se font face, séparés par une seule case, celui qui doit jouer est obligé de céder le passage."
           ],
-          // Source (non affichée) : l'opposition, « Finales de pions » (documents du projet).
+          source: "« Finales de pions » (l'opposition)."
         },
 
         defiTour: {
@@ -1693,6 +1759,13 @@
         }
       };
       const MODE_ORDER = ["free", "pions", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument"];
+
+      // Ce que cet appareil a le droit de voir (liste publiée, ou accès complet de l'animateur).
+      const ACCES = window.ECHIQUIER_ACCES || { complet: true, modes: null, niveauxMousquetaires: 99, enLigne: true, charte: true, bot: true };
+      const visibleModes = MODE_ORDER.filter(id => id === "free" || !ACCES.modes || ACCES.modes.includes(id));
+      // Variantes proposées dans le menu (les niveaux des Mousquetaires se dévoilent un à un).
+      const shownVariants = m => !m.variants ? null
+        : m === MODES.mousquetaires ? m.variants.slice(0, Math.max(1, ACCES.niveauxMousquetaires)) : m.variants;
 
       const $ = id => document.getElementById(id);
       const boardEl = $("board");
@@ -2077,13 +2150,14 @@
 
         modeSel.value = modeId;
         variantSel.innerHTML = "";
-        if (mode.variants) {
-          mode.variants.forEach((v, i) => {
+        const shown = shownVariants(mode);
+        if (shown) {
+          shown.forEach((v, i) => {
             const o = document.createElement("option"); o.value = i; o.textContent = v.name; variantSel.appendChild(o);
           });
           variantSel.value = String(mode.variants.indexOf(variant));
         }
-        variantSel.classList.toggle("hidden", !mode.variants);
+        variantSel.classList.toggle("hidden", !shown || shown.length < 2);
         $("refWrap").classList.toggle("hidden", modeId === "free" || !!mode.refereeOff);
         const setupLines = (variant && variant.setup) || mode.setup || [];
         const hasSkins = setupLines.some(line => line.split(" ").length > 2);
@@ -2091,7 +2165,8 @@
 
         $("rulesBody").innerHTML = modeId === "free" ? "" :
           "<ul>" + rule("rules").map(r => `<li>${r}</li>`).join("") +
-          (rule("par") ? `<li><b>Défi :</b> y arriver en ${rule("par")} coups, le minimum possible.</li>` : "") + "</ul>";
+          (rule("par") ? `<li><b>Défi :</b> y arriver en ${rule("par")} coups, le minimum possible.</li>` : "") + "</ul>" +
+          (mode.source && !ACCES.charte ? `<p class="src">Source : ${mode.source}</p>` : "");
 
         try { localStorage.setItem(MODE_KEY, JSON.stringify({ id: modeId, v: variantIdx })); } catch (_) { }
       }
@@ -2821,7 +2896,7 @@
       }
       $("btnUndo").addEventListener("click", undo);
 
-      MODE_ORDER.forEach(id => {
+      visibleModes.forEach(id => {
         const o = document.createElement("option"); o.value = id; o.textContent = MODES[id].name; modeSel.appendChild(o);
       });
       modeSel.addEventListener("change", () => setMode(modeSel.value, 0));
@@ -2925,9 +3000,16 @@
         applyTheme(next);
       });
       if (darkQuery && darkQuery.addEventListener) {
-        darkQuery.addEventListener("change", () => { if (!storedTheme()) applyTheme(systemTheme()); });
+        darkQuery.addEventListener("change", () => { if (ACCES.charte && !storedTheme()) applyTheme(systemTheme()); });
       }
-      applyTheme(storedTheme() || systemTheme());
+      if (ACCES.charte) applyTheme(storedTheme() || systemTheme());
+      else $("btnTheme").classList.add("hidden");
+      if (ACCES.complet) {                        // rappel discret : cet appareil voit tout
+        const pill = document.createElement("span");
+        pill.className = "acces-pill"; pill.textContent = "Accès animateur";
+        pill.title = "Cet appareil voit toutes les fonctionnalités. Ouvrez le site avec ?acces=public pour voir comme le public.";
+        document.querySelector(".head-side").appendChild(pill);
+      }
 
       // ---- Init ----
       loadCustom();
@@ -2935,11 +3017,13 @@
       loadProjectPieces();
       let saved = null;
       try { saved = JSON.parse(localStorage.getItem(MODE_KEY) || "null"); } catch (_) { }
-      setMode(saved && MODES[saved.id] ? saved.id : "free", saved ? saved.v : 0);
+      const startMode = saved && visibleModes.includes(saved.id) ? saved.id : "free";
+      const startVariants = shownVariants(MODES[startMode]);
+      setMode(startMode, saved && startVariants && saved.v < startVariants.length ? saved.v : 0);
 
       // Interface utilisée par les modules à côté (net.js pour le jeu en ligne) et par les tests.
       window.Echiquier = window.__echiquier = {
-        MODES, on, guards, statusExtras,
+        MODES, on, guards, statusExtras, acces: ACCES,
         setMode, doAction, newGame, undo, refresh, toast, sim, VALUE,
         exportState, importState,
         getShapes: () => JSON.parse(JSON.stringify(shapes)), setShapes,

@@ -17,6 +17,7 @@
 
   const E = window.Echiquier;
   if (!E) return;
+  if (!E.acces.enLigne) return;            // pas encore publié (voir ECHIQUIER_PUBLIE dans index.html)
 
   const ID_PREFIX = "echecsetmad-echiquier-";
   const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ";   // sans I ni O, trop proches de 1 et 0
