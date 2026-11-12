@@ -13,7 +13,12 @@
    Dans un mode à un seul joueur (Le Cavalier et sa jument), Mad ne joue pas :
    il propose un indice.
 
-   Pour mettre votre portrait : déposez une image carrée dans pieces/mad.png.
+   Portrait de Mad : des images carrées dans le dossier pieces/, une par expression :
+     mad-neutre.png  (neutre et souriant)        mad-malin.png  (content, sourire en coin)
+     mad-etonne.png  (étonné)                    mad-fier.png   (grand sourire fier)
+     mad-decu.png    (moue de déception)
+   Une expression absente est remplacée par mad-neutre.png, puis par pieces/mad.png,
+   puis par un simple « M ».
    ===================================================================== */
 (function () {
   "use strict";
@@ -21,7 +26,15 @@
   const E = window.Echiquier;
   if (!E) return;
 
-  const AVATAR = "pieces/mad.png";
+  const AVATARS = {
+    neutre: "pieces/mad-neutre.png", malin: "pieces/mad-malin.png", etonne: "pieces/mad-etonne.png",
+    fier: "pieces/mad-fier.png", decu: "pieces/mad-decu.png", base: "pieces/mad.png"
+  };
+  // L'expression de Mad selon ce qu'il dit.
+  const MOOD = {
+    iCapture: "malin", youCapture: "etonne", noHint: "etonne",
+    iWin: "fier", soloWin: "fier", youWin: "decu", soloStuck: "decu"
+  };
   const STORE = "echecs-mad-bot-v1";
   const LEVELS = {
     1: { name: "facile", depth: 1, noise: 260, blunder: 0.25, ms: 250 },
@@ -30,7 +43,7 @@
   };
   const WIN = 1e6;
 
-  const bot = { level: 0, side: "b", thinking: false, timer: null, line: "", lastKey: "" };
+  const bot = { level: 0, side: "b", thinking: false, timer: null, line: "", mood: "neutre" };
   try {
     const s = JSON.parse(localStorage.getItem(STORE) || "null");
     if (s) { bot.level = [0, 1, 2, 3].includes(s.level) ? s.level : 0; bot.side = s.side === "w" ? "w" : "b"; }
@@ -215,6 +228,7 @@
   };
   function say(kind, extra) {
     bot.line = pick(SAY[kind] || [""]) + (extra ? " " + extra : "");
+    bot.mood = MOOD[kind] || "neutre";
     renderCard();
   }
 
@@ -355,20 +369,23 @@
     card.classList.toggle("hidden", !show);
     if (!show) return;
     const L = LEVELS[bot.level];
+    const face = found[bot.mood] || found.neutre || found.base || "";
     card.classList.toggle("thinking", bot.thinking);
     card.innerHTML = `
-      <span class="bot-avatar${hasAvatar ? " has-img" : ""}">${hasAvatar ? `<img src="${AVATAR}" alt="">` : ""}<b>M</b></span>
+      <span class="bot-avatar${face ? " has-img" : ""}">${face ? `<img src="${face}" alt="">` : ""}<b>M</b></span>
       <span class="bot-text">
         <span class="bot-name">Mad${!solo && L ? ` <i>· ${L.name}</i>` : ""}</span>
         <span class="bot-line"></span>
       </span>`;
     card.querySelector(".bot-line").textContent = bot.line;
   }
-  // Le portrait est facultatif : on vérifie une seule fois s'il existe, sinon on garde le monogramme « M ».
-  let hasAvatar = false;
-  const probe = new Image();
-  probe.onload = () => { hasAvatar = true; renderCard(); };
-  probe.src = AVATAR;
+  // Les portraits sont facultatifs : on vérifie une seule fois lesquels existent.
+  const found = {};
+  Object.keys(AVATARS).forEach(mood => {
+    const probe = new Image();
+    probe.onload = () => { found[mood] = AVATARS[mood]; renderCard(); };
+    probe.src = AVATARS[mood];
+  });
 
   function giveHint() {
     const g = game();
