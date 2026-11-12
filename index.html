@@ -1611,6 +1611,28 @@
           // Source (non affichée) : Jeu de Madické Thiane, mémoire DAFFE « L'apprentissage par le jeu ».
         },
 
+        opposition: {
+          name: "Le duel des rois · l'opposition",
+          size: 8, first: "w", royal: true,
+          repetition: 3, repWinner: "b",
+          sides: { w: "Blancs", b: "Noirs" },
+          turnText: { w: "Au roi blanc de jouer", b: "Au roi noir de jouer" },
+          goals: { reach: { side: "any", type: "K" } }, stuck: "lose",
+          winText: {
+            reach: "Un roi a atteint la dernière rangée adverse.",
+            repetition: "La même position s'est répétée trois fois : les Noirs gagnent."
+          },
+          setup: ["e1 wK", "e8 bK"],
+          rules: [
+            "<b>Mise en place :</b> le roi blanc en e1, le roi noir en e8. Les Blancs commencent.",
+            "<b>Le roi</b> se déplace d'une case dans toutes les directions. Deux rois ne peuvent jamais se toucher.",
+            "<b>But :</b> être le premier à amener son roi sur la dernière rangée adverse.",
+            "<b>Répétition :</b> si la même position revient trois fois, les Noirs gagnent. Les Blancs doivent donc forcer le passage.",
+            "<b>À faire émerger :</b> l'opposition. Quand deux rois se font face, séparés par une seule case, celui qui doit jouer est obligé de céder le passage."
+          ],
+          // Source (non affichée) : l'opposition, « Finales de pions » (documents du projet).
+        },
+
         defiTour: {
           name: "Défi de la tour · la chasse aux pions",
           size: 8, first: "w", solo: true, countMoves: true,
@@ -1670,7 +1692,7 @@
           ]
         }
       };
-      const MODE_ORDER = ["free", "pions", "mousquetaires", "loup", "sanglier", "dalton", "defiTour", "defiFou", "jument"];
+      const MODE_ORDER = ["free", "pions", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument"];
 
       const $ = id => document.getElementById(id);
       const boardEl = $("board");
@@ -1853,6 +1875,15 @@
         }
         return out;
       }
+      // Signature d'une position (pièces + trait), pour compter les répétitions.
+      function positionKey() {
+        return Object.keys(model).sort().map(s => s + (model[s].code || "")).join(",") + "|" + game.turn;
+      }
+      function countPosition() {
+        const k = positionKey();
+        game.rep = { ...(game.rep || {}), [k]: ((game.rep || {})[k] || 0) + 1 };   // copie : jamais modifié sur place
+        return game.rep[k];
+      }
       function piecesOf(c) { return Object.keys(model).filter(s => colorOf(model[s]) === c); }
       function hasMoves(c) { return piecesOf(c).some(s => movesFrom(s).length > 0); }
       function points(c) { return piecesOf(c).reduce((n, s) => n + (VALUE[model[s].code[1]] || 0), 0); }
@@ -1957,6 +1988,9 @@
           } else {
             if (!mode.solo) game.turn = other(side);
             afterTurnChange();
+            if (mode.repetition && game.phase !== "over" && countPosition() >= mode.repetition) {
+              end(mode.repWinner || null, wt.repetition || "La même position s'est répétée : partie nulle.");
+            }
           }
         } else return false;
         return true;
@@ -2015,6 +2049,7 @@
           quiet: 0, moves: 0, last: null, result: null, note: ""
         };
         if (game.referee && game.phase === "move") afterTurnChange();
+        if (game.referee && mode.repetition && game.phase !== "over") countPosition();
         refresh();
         emit("change");
       }
@@ -2239,6 +2274,10 @@
         } else {
           main = dot(game.turn) + mode.turnText[game.turn];
           if (mode.quietLimit) meta.push(`Déplacements sans prise : ${game.quiet} / ${mode.quietLimit}`);
+          if (mode.repetition) {
+            const seen = (game.rep || {})[positionKey()] || 0;
+            if (seen > 1) meta.push(`Cette position est apparue ${seen} fois (${mode.repetition} fois = fin de la partie).`);
+          }
           if (mode.countMoves) meta.push(`Coups joués : ${game.moves || 0}` + (rule("par") ? ` · minimum possible : ${rule("par")}` : ""));
         }
         if (mode.scoring && game.phase !== "place") meta.push(`Points : Blancs ${points("w")} · Noirs ${points("b")}`);

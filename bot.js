@@ -207,6 +207,7 @@
   };
   const TIPS = {
     pions: "Astuce : un pion tout seul se fait prendre, avance-les ensemble.",
+    opposition: "Astuce : mets ton roi juste en face du mien, avec une case entre nous.",
     dalton: "Astuce : des pions qui se protègent avancent ensemble.",
     loup: "Astuce : le loup doit choisir, il ne peut pas tout garder.",
     sanglier: "Astuce : regarde les diagonales des chasseurs avant de sauter.",
