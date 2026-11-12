@@ -152,16 +152,21 @@
   }
 
   /* ---------- Indice pour les modes à un seul joueur : plus court chemin vers la victoire ---------- */
+  // Les états mis de côté ne doivent jamais redevenir l'état en cours tels quels : on en charge une copie.
+  const copy = s => ({ model: { ...s.model }, game: { ...s.game, reserve: { w: s.game.reserve.w.slice(), b: s.game.reserve.b.slice() } } });
   function soloHint() {
     const start = E.sim.save();
-    const key = () => Object.keys(E.state().model).sort().join(",");
+    const key = () => {
+      const m = E.state().model;
+      return Object.keys(m).sort().map(s => s + (m[s].code || "")).join(",");
+    };
     const seen = new Set([key()]);
     let frontier = [{ s: start, first: null }];
     try {
       for (let depth = 0; depth < 14 && frontier.length; depth++) {
         const next = [];
         for (const node of frontier) {
-          E.sim.load(node.s);
+          E.sim.load(copy(node.s));
           for (const a of E.sim.actions()) {
             const keep = E.sim.save();
             E.sim.apply(a);
@@ -177,7 +182,7 @@
         }
         frontier = next;
       }
-    } finally { E.sim.load(start); }
+    } finally { E.sim.load(copy(start)); }
     return null;
   }
 

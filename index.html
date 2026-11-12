@@ -1611,9 +1611,47 @@
           // Source (non affichée) : Jeu de Madické Thiane, mémoire DAFFE « L'apprentissage par le jeu ».
         },
 
+        defiTour: {
+          name: "Défi de la tour · la chasse aux pions",
+          size: 8, first: "w", solo: true, countMoves: true,
+          sides: { w: "La tour", b: "Les pions" },
+          turnText: { w: "À la tour de jouer" },
+          stuck: "lose",
+          winText: { captureAll: { w: "La tour a capturé les cinq pions." } },
+          variants: [
+            { name: "Défi 1", par: 5, setup: ["a1 wR", "a5 bP", "a6 bP", "f4 bP", "f6 bP", "f8 bP"] },
+            { name: "Défi 2", par: 6, setup: ["a1 wR", "c5 bP", "e6 bP", "f3 bP", "f5 bP", "f6 bP"] },
+            { name: "Défi 3", par: 7, setup: ["a1 wR", "b7 bP", "c1 bP", "c2 bP", "c4 bP", "e2 bP"] }
+          ],
+          rules: [
+            "<b>Mise en place :</b> une tour en a1 et cinq pions noirs sur l'échiquier. Seule la tour joue, les pions ne bougent pas.",
+            "<b>La tour</b> se déplace en ligne droite, d'autant de cases qu'elle veut, sans sauter par-dessus un pion.",
+            "<b>But :</b> capturer les cinq pions en un minimum de coups."
+          ]
+        },
+
+        defiFou: {
+          name: "Défi du fou · cinq pions en diagonale",
+          size: 8, first: "w", solo: true, countMoves: true,
+          sides: { w: "Le fou", b: "Les pions" },
+          turnText: { w: "Au fou de jouer" },
+          stuck: "lose",
+          winText: { captureAll: { w: "Le fou a capturé les cinq pions." } },
+          variants: [
+            { name: "Défi 1", par: 5, setup: ["c1 wB", "a3 bP", "a5 bP", "d8 bP", "e7 bP", "h4 bP"] },
+            { name: "Défi 2", par: 6, setup: ["c1 wB", "a1 bP", "a7 bP", "c3 bP", "c5 bP", "e3 bP"] },
+            { name: "Défi 3", par: 7, setup: ["c1 wB", "a1 bP", "b4 bP", "f6 bP", "g1 bP", "g5 bP"] }
+          ],
+          rules: [
+            "<b>Mise en place :</b> un fou en c1 et cinq pions noirs, tous sur des cases de la couleur du fou. Seul le fou joue, les pions ne bougent pas.",
+            "<b>Le fou</b> se déplace en diagonale, d'autant de cases qu'il veut, sans sauter par-dessus un pion. Il reste toujours sur la même couleur de case.",
+            "<b>But :</b> capturer les cinq pions en un minimum de coups."
+          ]
+        },
+
         jument: {
           name: "Le Cavalier et sa jument",
-          size: 8, first: "w", solo: true,
+          size: 8, first: "w", solo: true, countMoves: true, par: 6,
           sides: { w: "Le cavalier", b: "Les pions" },
           turnText: { w: "Au cavalier de jouer" },
           goals: { target: { side: "w", type: "N", square: "h8" } },
@@ -1628,12 +1666,11 @@
             "<b>Mise en place :</b> le cavalier en a1, sa jument en h8, dix pions noirs sur l'échiquier. Seul le cavalier joue.",
             "<b>But :</b> rejoindre la case h8 pour retrouver la jument.",
             "<b>Le cavalier</b> se déplace comme un cavalier. Il ne peut pas capturer un pion.",
-            "<b>Interdit</b> de se poser sur une case attaquée par un pion noir (les pions attaquent en diagonale, vers le bas).",
-            "<b>Défi :</b> y arriver en 6 coups, le minimum possible."
+            "<b>Interdit</b> de se poser sur une case attaquée par un pion noir (les pions attaquent en diagonale, vers le bas)."
           ]
         }
       };
-      const MODE_ORDER = ["free", "pions", "mousquetaires", "loup", "sanglier", "dalton", "jument"];
+      const MODE_ORDER = ["free", "pions", "mousquetaires", "loup", "sanglier", "dalton", "defiTour", "defiFou", "jument"];
 
       const $ = id => document.getElementById(id);
       const boardEl = $("board");
@@ -1831,6 +1868,11 @@
 
       function end(winner, reason) {
         game.phase = "over";
+        if (mode.countMoves && winner === "w") {       // défi à un joueur : on compare au minimum possible
+          const n = game.moves, par = rule("par");
+          reason += ` Réussi en ${n} coup${n > 1 ? "s" : ""}.`;
+          if (par) reason += n <= par ? " C'est le minimum possible, bravo !" : ` Le minimum est ${par} : essayez de faire mieux.`;
+        }
         game.result = { winner, reason };
       }
       function endByPoints(lead) {
@@ -1900,6 +1942,7 @@
           model[a.to] = piece;
           game.last = { from: a.from, to: a.to };
           game.quiet = captured ? 0 : game.quiet + 1;
+          game.moves = (game.moves || 0) + 1;
           const g = mode.goals || {}, wt = mode.winText || {};
           const lastRank = side === "w" ? N : 1;
           const tg = g.target;
@@ -1969,7 +2012,7 @@
           phase: rule("placement") ? "place" : "move",
           turn: mode.first || "w",
           reserve: { w: (rule("placement") || []).slice(), b: (rule("placement") || []).slice() },
-          quiet: 0, last: null, result: null, note: ""
+          quiet: 0, moves: 0, last: null, result: null, note: ""
         };
         if (game.referee && game.phase === "move") afterTurnChange();
         refresh();
@@ -2005,7 +2048,8 @@
         $("skinWrap").classList.toggle("hidden", modeId === "free" || !hasSkins);
 
         $("rulesBody").innerHTML = modeId === "free" ? "" :
-          "<ul>" + rule("rules").map(r => `<li>${r}</li>`).join("") + "</ul>";
+          "<ul>" + rule("rules").map(r => `<li>${r}</li>`).join("") +
+          (rule("par") ? `<li><b>Défi :</b> y arriver en ${rule("par")} coups, le minimum possible.</li>` : "") + "</ul>";
 
         try { localStorage.setItem(MODE_KEY, JSON.stringify({ id: modeId, v: variantIdx })); } catch (_) { }
       }
@@ -2195,6 +2239,7 @@
         } else {
           main = dot(game.turn) + mode.turnText[game.turn];
           if (mode.quietLimit) meta.push(`Déplacements sans prise : ${game.quiet} / ${mode.quietLimit}`);
+          if (mode.countMoves) meta.push(`Coups joués : ${game.moves || 0}` + (rule("par") ? ` · minimum possible : ${rule("par")}` : ""));
         }
         if (mode.scoring && game.phase !== "place") meta.push(`Points : Blancs ${points("w")} · Noirs ${points("b")}`);
         if (game.note) meta.push(game.note);
