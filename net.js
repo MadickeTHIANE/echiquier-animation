@@ -24,6 +24,7 @@
   const URL_PARAM = "partie";
   const LIBS = { peer: "vendor/peerjs.min.js", qr: "vendor/qrcode.js" };
   const PING_MS = 4000, LOST_MS = 13000, RETRY_MS = 3000, MAX_RETRIES = 40;
+  const CONNECT_MS = 15000, MAX_FIRST_TRIES = 3;   // première connexion : on n'insiste pas indéfiniment
 
   const net = {
     mode: null,          // null | "host" | "guest"
@@ -91,6 +92,8 @@
     return turnOk(net.side);
   });
   E.guards.control.push(() => net.mode !== "guest");
+  // Un spectateur ne dessine pas et n'efface pas les flèches de la partie.
+  E.guards.annotate.push(() => !(net.mode === "guest" && net.myRole !== "player"));
 
   E.statusExtras.push(() => {
     if (!net.mode) return "";
@@ -249,6 +252,9 @@
       if (net.peer !== peer) return;
       const conn = peer.connect(peerId(net.code), { reliable: true });
       net.conn = conn;
+      // Certains réseaux (écoles, entreprises) bloquent ce type de connexion : sans réponse, on réessaie.
+      clearTimeout(net.timer);
+      net.timer = setTimeout(() => { if (net.conn === conn && net.status !== "connected") lost(); }, CONNECT_MS);
       conn.on("open", () => { net.seen = Date.now(); startPing(); });
       conn.on("data", m => { if (net.conn === conn) onGuestData(m); });
       conn.on("close", () => { if (net.conn === conn) lost(); });
@@ -266,6 +272,7 @@
     net.seen = Date.now();
     if (!m || typeof m !== "object" || m.t === "ping") return;
     if (m.t === "hello") {
+      clearTimeout(net.timer);
       net.status = "connected"; net.everConnected = true; net.retries = 0;
       net.myRole = m.role; net.mySide = m.side; net.ver = m.ver;
       E.importState(m.state);
@@ -306,7 +313,11 @@
     try { if (peer) peer.destroy(); } catch (_) { }
     stopPing();
     clearTimeout(net.timer);
-    if (++net.retries > MAX_RETRIES) return fail("La connexion a été perdue.");
+    net.retries++;
+    if (!net.everConnected && net.retries >= MAX_FIRST_TRIES) {
+      return fail("Connexion impossible. Ce réseau bloque peut-être le jeu en ligne : essayez avec un autre réseau, par exemple le partage de connexion d'un téléphone.");
+    }
+    if (net.retries > MAX_RETRIES) return fail("La connexion a été perdue.");
     net.status = "reconnecting";
     renderAll();
     net.timer = setTimeout(openGuestPeer, RETRY_MS);

@@ -1432,7 +1432,6 @@
       const ALL_FILES = "abcdefgh";
       const GLYPH = { K: "♚", Q: "♛", R: "♜", B: "♝", N: "♞", P: "♟" };
       const VALUE = { Q: 9, R: 5, B: 3, N: 3, P: 1, K: 0 };
-      const HEX = { green: "#22a722", red: "#e23636", blue: "#3b7ddd" };
       const STORE_KEY = "echecs-mad-custom-v1";
       const MODE_KEY = "echecs-mad-mode-v1";
       const PIECES_DIR = "pieces";           // folder in the repo holding shared images
@@ -1739,9 +1738,10 @@
         if (muted) return;
         (listeners[ev] || []).forEach(fn => { try { fn(detail || {}); } catch (err) { console.error(err); } });
       }
-      const guards = { play: [], control: [] };   // chaque verrou doit dire oui
+      const guards = { play: [], control: [], annotate: [] };   // chaque verrou doit dire oui
       const mayPlay = () => guards.play.every(g => g());
       const mayControl = () => guards.control.every(g => g());
+      const mayAnnotate = () => guards.annotate.every(g => g());
       const statusExtras = [];      // fonctions qui renvoient une ligne de statut en plus (ou "")
 
       // ---- Coordinate helpers ----
@@ -1760,7 +1760,7 @@
       function center(square) { const p = sqToRC(square); return { x: p.col + 0.5, y: p.row + 0.5 }; }
 
       /* =====================================================================
-         RULES ENGINE (no kings, no check: these mini-games are played without)
+         RULES ENGINE — mini-jeux sans roi, ou avec rois quand le mode le demande (règle « royal »)
          ===================================================================== */
       const DIRS = {
         R: [[1, 0], [-1, 0], [0, 1], [0, -1]],
@@ -1894,7 +1894,7 @@
       function restore(s) {
         const o = JSON.parse(s);
         model = o.model;
-        Object.assign(game, o.g);
+        game = o.g;
       }
 
       function end(winner, reason) {
@@ -1913,7 +1913,7 @@
         else if (b > w) { winner = "b"; txt = `Noirs ${b} points, Blancs ${w} points.`; }
         else {
           winner = mode.tieWinner || null;
-          txt = `Égalité ${w} à ${b} : les Noirs l'emportent, ils ont joué en second.`;
+          txt = `Égalité ${w} à ${b} : ` + (winner ? `les ${mode.sides[winner]} l'emportent, ils ont joué en second.` : "partie nulle.");
         }
         end(winner, lead + " " + txt);
       }
@@ -2058,7 +2058,8 @@
       function configureMode(id, vIdx) {
         modeId = MODES[id] ? id : "free";
         mode = MODES[modeId];
-        variant = mode.variants ? mode.variants[Math.min(vIdx || 0, mode.variants.length - 1)] : null;
+        const wanted = Number.isInteger(vIdx) ? vIdx : 0;
+        variant = mode.variants ? mode.variants[Math.max(0, Math.min(wanted, mode.variants.length - 1))] : null;
         variantIdx = variant ? mode.variants.indexOf(variant) : 0;
         N = mode.size;
         FILES = ALL_FILES.slice(0, N).split("");
@@ -2095,6 +2096,63 @@
         else newGame();
       }
 
+      // ---- Ce qui vient d'un autre appareil n'est jamais utilisé tel quel ----
+      const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+      const validSq = s => typeof s === "string" && /^[a-h][1-8]$/.test(s) && fileIdx(s) >= 0 && rankOf(s) <= N;
+      const COLORS = ["green", "red", "blue"];
+      // Chemin d'image du site (pas d'adresse externe), ou image embarquée.
+      const safeRel = s => typeof s === "string" && s.length < 300 && !/[:\\]/.test(s) && !s.startsWith("/") && !s.includes("..");
+      const safeData = s => typeof s === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s);
+      function cleanShapes(list) {
+        if (!Array.isArray(list)) return [];
+        const out = [];
+        for (const s of list) {
+          if (!s || !COLORS.includes(s.color)) continue;
+          if (s.type === "hl" && validSq(s.square)) out.push({ type: "hl", square: s.square, color: s.color });
+          else if (s.type === "arrow" && validSq(s.from) && validSq(s.to)) {
+            const a = { type: "arrow", from: s.from, to: s.to, color: s.color };
+            if (s.hint) a.hint = true;
+            out.push(a);
+          }
+        }
+        return out;
+      }
+      function cleanModel(m) {
+        const out = {};
+        if (!m || typeof m !== "object") return out;
+        for (const sq of Object.keys(m)) {
+          const p = m[sq];
+          if (!validSq(sq) || !p) continue;
+          if (p.kind === "std" && /^[wb][KQRBNP]$/.test(p.code)) {
+            out[sq] = { kind: "std", code: p.code };
+            if (safeRel(p.skin)) out[sq].skin = p.skin;
+          } else if (p.kind === "img" && (safeRel(p.src) || safeData(p.src))) out[sq] = { kind: "img", src: p.src };
+        }
+        return out;
+      }
+      function cleanGame(g) {
+        if (!g || typeof g !== "object") return null;
+        const side = c => (c === "b" ? "b" : "w");
+        const types = list => (Array.isArray(list) ? list.filter(t => /^[KQRBNP]$/.test(t)) : []);
+        const num = v => (Number.isFinite(v) ? v : 0);
+        const res = g.result && typeof g.result === "object"
+          ? { winner: g.result.winner === "w" || g.result.winner === "b" ? g.result.winner : null, reason: String(g.result.reason || "") }
+          : null;
+        const rep = {};
+        if (g.rep && typeof g.rep === "object") for (const k of Object.keys(g.rep)) rep[k] = num(g.rep[k]);
+        let last = null;
+        if (g.last && typeof g.last === "object" && validSq(g.last.to)) {
+          last = { to: g.last.to };
+          if (validSq(g.last.from)) last.from = g.last.from;
+        }
+        const phase = ["place", "move", "over"].includes(g.phase) ? g.phase : "move";
+        return {
+          referee: !!g.referee, phase: phase === "over" && !res ? "move" : phase, turn: side(g.turn),
+          reserve: { w: types(g.reserve && g.reserve.w), b: types(g.reserve && g.reserve.b) },
+          quiet: num(g.quiet), moves: num(g.moves), last, result: res, note: String(g.note || ""), rep
+        };
+      }
+
       // État complet de la partie, pour l'envoyer ailleurs (jeu en ligne) ou le reprendre.
       function exportState() {
         return JSON.parse(JSON.stringify({ modeId, variantIdx, refereeOn, model, game, shapes, sideToMove }));
@@ -2102,16 +2160,19 @@
       function importState(s) {
         muted = true;
         try {
+          if (!s || typeof s !== "object") return;
           if (s.modeId !== modeId || (s.variantIdx || 0) !== variantIdx) configureMode(s.modeId, s.variantIdx);
           refereeOn = !!s.refereeOn; $("chkReferee").checked = refereeOn;
-          model = s.model || {}; game = s.game || null; shapes = s.shapes || [];
+          model = cleanModel(s.model);
+          game = modeId === "free" ? null : cleanGame(s.game);
+          shapes = cleanShapes(s.shapes);
           sideToMove = s.sideToMove === "b" ? "b" : "w"; $("sideToMove").value = sideToMove;
           history = []; sel = null; selRes = null;
           if (active && active.kind === "piece") { killGhost(); active = null; }
           refresh();
         } finally { muted = false; }
       }
-      function setShapes(list) { shapes = Array.isArray(list) ? list : []; renderShapes(); }
+      function setShapes(list) { shapes = cleanShapes(list); renderShapes(); }
 
       /* =====================================================================
          RENDERING
@@ -2259,14 +2320,14 @@
         const extras = statusExtras.map(f => f()).filter(Boolean);
         if (!game.referee) {
           statusEl.innerHTML = `<span class="main">Déplacement libre</span><span class="meta">L'arbitrage est désactivé : placez et déplacez les pièces comme vous voulez.</span>` +
-            extras.map(m => `<span class="meta">${m}</span>`).join("");
+            extras.map(m => `<span class="meta">${esc(m)}</span>`).join("");
           return;
         }
         const dot = c => `<span class="side ${c}"></span>`;
         let main = "", meta = [];
         if (game.phase === "over") {
           const w = game.result.winner;
-          main = w ? `Victoire : ${mode.sides[w]}` : "Partie nulle";
+          main = w && mode.sides[w] ? `Victoire : ${mode.sides[w]}` : "Partie nulle";
           meta.push(game.result.reason);
         } else if (game.phase === "place") {
           main = dot(game.turn) + mode.placeText[game.turn];
@@ -2283,7 +2344,7 @@
         if (mode.scoring && game.phase !== "place") meta.push(`Points : Blancs ${points("w")} · Noirs ${points("b")}`);
         if (game.note) meta.push(game.note);
         meta.push(...extras);
-        statusEl.innerHTML = `<span class="main">${main}</span>` + meta.map(m => `<span class="meta">${m}</span>`).join("");
+        statusEl.innerHTML = `<span class="main">${main}</span>` + meta.map(m => `<span class="meta">${esc(m)}</span>`).join("");
       }
 
       // Top/bottom piece rows: full palettes when playing freely, the pieces left to place in a refereed placement.
@@ -2457,6 +2518,7 @@
       const touchPts = new Map();
       let pending = null;           // first touch, decision deferred (piece vs. arrow)
       function clearAnnotations() {
+        if (!mayAnnotate()) return;               // un spectateur ne touche pas aux flèches de la partie
         const had = shapes.length > 0;
         shapes = []; renderShapes();
         if (had) emit("shapes");
@@ -2494,7 +2556,7 @@
                 for (const [id, pt] of touchPts) { if (id !== e.pointerId) { anchorSq = squareFromPoint(pt.x, pt.y); break; } }
               }
               pending = null;
-              if (anchorSq) startTouchArrow(anchorSq, e.pointerId, e);
+              if (anchorSq && mayAnnotate()) startTouchArrow(anchorSq, e.pointerId, e);
             }
             try { boardEl.setPointerCapture(e.pointerId); } catch (_) { }
             return;
@@ -2512,7 +2574,7 @@
         if (active) return;
         if (e.button === 2) {                            // right -> annotation
           const sq = squareFromEvent(e);
-          if (!sq) return;
+          if (!sq || !mayAnnotate()) { e.preventDefault(); return; }
           active = { kind: "arrow", from: sq, to: sq, pointerId: e.pointerId, color: colorFromMods(e) };
           try { boardEl.setPointerCapture(e.pointerId); } catch (_) { }
           renderShapes({ type: "hl", square: sq, color: active.color });
