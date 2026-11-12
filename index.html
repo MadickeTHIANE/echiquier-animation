@@ -1493,14 +1493,46 @@
           winText: {
             captureAll: { w: "Les Blancs ont capturé toutes les pièces noires.", b: "Les Noirs ont capturé toutes les pièces blanches." }
           },
-          rules: [
-            "<b>Matériel :</b> chaque camp a une dame, une tour, un fou et un cavalier. L'échiquier de 16 cases est vide au départ.",
-            "<b>Placement :</b> les Blancs posent une première pièce sur une case libre, puis les Noirs, et ainsi de suite jusqu'à ce que les 8 pièces soient posées.",
-            "<b>Jeu :</b> dès que les Noirs ont posé leur dernière pièce, les Blancs jouent. Les pièces se déplacent et capturent comme aux échecs.",
-            "<b>But :</b> capturer toutes les pièces adverses.",
-            "<b>Comptage :</b> après 6 déplacements sans prise (3 par camp), on additionne la valeur des pièces restantes : dame 9, tour 5, fou 3, cavalier 3.",
-            "<b>Égalité :</b> les Noirs gagnent, car ils ont eu le désavantage de jouer en second."
+          // Trois niveaux : seule la quatrième pièce change (dame, pion ou roi).
+          variants: [
+            {
+              name: "Niveau 1 · la dame",
+              placement: ["Q", "R", "B", "N"],
+              rules: [
+                "<b>Matériel :</b> chaque camp a une dame, une tour, un fou et un cavalier. L'échiquier de 16 cases est vide au départ.",
+                "<b>Placement :</b> les Blancs posent une première pièce sur une case libre, puis les Noirs, et ainsi de suite jusqu'à ce que les 8 pièces soient posées.",
+                "<b>Jeu :</b> dès que les Noirs ont posé leur dernière pièce, les Blancs jouent. Les pièces se déplacent et capturent comme aux échecs.",
+                "<b>But :</b> capturer toutes les pièces adverses.",
+                "<b>Comptage :</b> après 6 déplacements sans prise (3 par camp), on additionne la valeur des pièces restantes : dame 9, tour 5, fou 3, cavalier 3.",
+                "<b>Égalité :</b> les Noirs gagnent, car ils ont eu le désavantage de jouer en second."
+              ]
+            },
+            {
+              name: "Niveau 2 · le pion",
+              placement: ["R", "B", "N", "P"], pawnBothWays: true,
+              rules: [
+                "<b>Matériel :</b> chaque camp a une tour, un fou, un cavalier et un pion. L'échiquier de 16 cases est vide au départ.",
+                "<b>Placement :</b> les Blancs posent une première pièce sur une case libre, puis les Noirs, et ainsi de suite jusqu'à ce que les 8 pièces soient posées.",
+                "<b>Le pion</b> est particulier ici : il avance ou recule d'une case, et capture d'une case en diagonale, vers l'avant comme vers l'arrière.",
+                "<b>But :</b> capturer toutes les pièces adverses.",
+                "<b>Comptage :</b> après 6 déplacements sans prise (3 par camp), on additionne la valeur des pièces restantes : tour 5, fou 3, cavalier 3, pion 1.",
+                "<b>Égalité :</b> les Noirs gagnent, car ils ont eu le désavantage de jouer en second."
+              ]
+            },
+            {
+              name: "Niveau 3 · le roi",
+              placement: ["K", "R", "B", "N"], royal: true,
+              rules: [
+                "<b>Matériel :</b> chaque camp a un roi, une tour, un fou et un cavalier. L'échiquier de 16 cases est vide au départ.",
+                "<b>Placement :</b> chacun pose une pièce à son tour, les Blancs d'abord. Aucun roi ne doit se retrouver en échec pendant le placement.",
+                "<b>Le roi</b> se déplace d'une case dans toutes les directions, jamais sur une case attaquée. Un roi en échec doit se mettre à l'abri.",
+                "<b>But :</b> mettre le roi adverse échec et mat.",
+                "<b>Comptage :</b> après 6 déplacements sans prise (3 par camp), ou si un joueur ne peut plus bouger sans être en échec, on additionne la valeur des pièces restantes : tour 5, fou 3, cavalier 3.",
+                "<b>Égalité :</b> les Noirs gagnent, car ils ont eu le désavantage de jouer en second."
+              ]
+            }
           ],
+          rules: [],
           // Source (non affichée) : Valeur des pièces : « Animations ludiques autour du jeu d'échecs » v5 et Cahier Débutant 2 (La valeur des pièces).
         },
 
@@ -1679,10 +1711,25 @@
       DIRS.Q = DIRS.R.concat(DIRS.B);
       DIRS.K = DIRS.Q;
 
-      function movesFrom(sq) {
+      // Une règle peut être précisée par la variante ; sinon c'est celle du mode.
+      const rule = key => (variant && variant[key] !== undefined) ? variant[key] : mode[key];
+
+      // Déplacements « bruts » d'une pièce, sans se soucier de la sécurité du roi.
+      function pseudoMoves(sq) {
         const p = model[sq];
         if (!p || p.kind !== "std") return [];
         const c = p.code[0], t = p.code[1], f = fileIdx(sq), r = rankOf(sq), out = [];
+        if (t === "P" && rule("pawnBothWays")) {       // pion des Mousquetaires : avance, recule, prend sur les 4 diagonales
+          for (const d of [1, -1]) {
+            const one = mkSq(f, r + d);
+            if (one && !model[one]) out.push(one);
+            for (const df of [-1, 1]) {
+              const x = mkSq(f + df, r + d);
+              if (x && model[x] && colorOf(model[x]) !== c) out.push(x);
+            }
+          }
+          return out;
+        }
         if (t === "P") {
           const d = c === "w" ? 1 : -1;
           const one = mkSq(f, r + d);
@@ -1733,17 +1780,48 @@
           return true;
         });
       }
+      // Avec des rois (règle « royal ») : un coup qui laisse son propre roi en échec est interdit.
+      function movesFrom(sq) {
+        const list = pseudoMoves(sq);
+        if (!list.length || !rule("royal")) return list;
+        const p = model[sq], c = p.code[0];
+        return list.filter(to => {
+          const taken = model[to];
+          model[to] = p; delete model[sq];
+          const safe = !inCheck(c);
+          model[sq] = p;
+          if (taken) model[to] = taken; else delete model[to];
+          return safe;
+        });
+      }
+      function kingSquare(c) { return Object.keys(model).find(s => model[s].kind === "std" && model[s].code === c + "K") || null; }
+      function inCheck(c) {
+        const k = kingSquare(c);
+        return !!k && piecesOf(other(c)).some(s => pseudoMoves(s).includes(k));
+      }
+      // Pose d'une pièce : case libre, et aucun roi ne doit se retrouver en échec.
+      function canPlace(side, type, to) {
+        if (!to || model[to]) return false;
+        if (!rule("royal")) return true;
+        model[to] = { kind: "std", code: side + type };
+        const bad = inCheck("w") || inCheck("b");
+        delete model[to];
+        return !bad;
+      }
+      function placements(side) {
+        const types = [...new Set(game.reserve[side])], out = [];
+        for (let f = 0; f < N; f++) for (let r = 1; r <= N; r++) {
+          const to = FILES[f] + r;
+          types.forEach(type => { if (canPlace(side, type, to)) out.push({ t: "place", type, to }); });
+        }
+        return out;
+      }
       function piecesOf(c) { return Object.keys(model).filter(s => colorOf(model[s]) === c); }
       function hasMoves(c) { return piecesOf(c).some(s => movesFrom(s).length > 0); }
       function points(c) { return piecesOf(c).reduce((n, s) => n + (VALUE[model[s].code[1]] || 0), 0); }
 
       function snapshot() {
-        return JSON.stringify({
-          model, g: {
-            phase: game.phase, turn: game.turn, reserve: game.reserve, quiet: game.quiet,
-            last: game.last, result: game.result, note: game.note
-          }
-        });
+        return JSON.stringify({ model, g: game });
       }
       function restore(s) {
         const o = JSON.parse(s);
@@ -1768,8 +1846,13 @@
       }
       function afterTurnChange() {
         const side = game.turn;
-        if (hasMoves(side)) return;
+        const check = rule("royal") && inCheck(side);
+        if (hasMoves(side)) {
+          if (check) game.note = "Échec au roi " + (side === "w" ? "blanc" : "noir") + " !";
+          return;
+        }
         const o = other(side);
+        if (check) { end(o, "Échec et mat : le roi " + (side === "w" ? "blanc" : "noir") + " ne peut plus s'échapper."); return; }
         if (mode.stuck === "points") { endByPoints(`${mode.sides[side]} : aucun coup possible.`); return; }
         if (mode.stuck === "count") {            // blocage : celui qui a le plus de pièces gagne
           const w = piecesOf("w").length, b = piecesOf("b").length;
@@ -1789,12 +1872,16 @@
 
       // Les règles pures : applique une action à `model` et `game`, sans affichage ni historique.
       // Sert au jeu normal (via doAction) et à la réflexion du bot, qui essaie des coups puis les défait.
+      let refusal = "";        // raison du dernier refus, affichée au joueur
       function applyAction(a) {
+        refusal = "";
         if (!refereed() || game.phase === "over") return false;
         const side = game.turn;
         if (a.t === "place") {
           const i = game.reserve[side].indexOf(a.type);
           if (game.phase !== "place" || i < 0 || !a.to || model[a.to]) return false;
+          // Si aucune pose n'est permise (cas rarissime avec les rois), toute case libre est acceptée.
+          if (!canPlace(side, a.type, a.to) && placements(side).length) { refusal = "Case interdite : un roi serait en échec."; return false; }
           game.note = "";
           game.reserve[side].splice(i, 1);
           model[a.to] = { kind: "std", code: side + a.type };
@@ -1838,7 +1925,7 @@
         if (!refereed() || game.phase === "over") return false;
         const before = snapshot();
         const captured = a.t === "move" && !!model[a.to];
-        if (!applyAction(a)) { refresh(); return false; }
+        if (!applyAction(a)) { refresh(); if (refusal) toast(refusal, true); return false; }
         history.push(before);
         sel = null; selRes = null;
         refresh();
@@ -1850,6 +1937,8 @@
         if (!refereed() || game.phase === "over") return [];
         const side = game.turn, out = [];
         if (game.phase === "place") {
+          const legal = placements(side);
+          if (legal.length) return legal;
           const types = [...new Set(game.reserve[side])];
           for (let f = 0; f < N; f++) for (let r = 1; r <= N; r++) {
             const sq = FILES[f] + r;
@@ -1877,9 +1966,9 @@
         }
         game = {
           referee: refereeOn && !mode.refereeOff,
-          phase: mode.placement ? "place" : "move",
+          phase: rule("placement") ? "place" : "move",
           turn: mode.first || "w",
-          reserve: { w: (mode.placement || []).slice(), b: (mode.placement || []).slice() },
+          reserve: { w: (rule("placement") || []).slice(), b: (rule("placement") || []).slice() },
           quiet: 0, last: null, result: null, note: ""
         };
         if (game.referee && game.phase === "move") afterTurnChange();
@@ -1916,7 +2005,7 @@
         $("skinWrap").classList.toggle("hidden", modeId === "free" || !hasSkins);
 
         $("rulesBody").innerHTML = modeId === "free" ? "" :
-          "<ul>" + mode.rules.map(r => `<li>${r}</li>`).join("") + "</ul>";
+          "<ul>" + rule("rules").map(r => `<li>${r}</li>`).join("") + "</ul>";
 
         try { localStorage.setItem(MODE_KEY, JSON.stringify({ id: modeId, v: variantIdx })); } catch (_) { }
       }
@@ -2029,6 +2118,17 @@
           if (game.last.from) hl += rect(game.last.from, "#f2c230", 0.38);
           if (game.last.to) hl += rect(game.last.to, "#f2c230", 0.38);
         }
+        if (refereed() && game.phase === "move" && rule("royal") && inCheck(game.turn)) {
+          const k = kingSquare(game.turn);
+          if (k) hl += rect(k, "#e23636", 0.5);                    // roi en échec
+        }
+        if (refereed() && game.phase === "place" && selRes && selRes.color === game.turn && rule("royal")) {
+          for (const a of placements(game.turn)) {                 // cases où la pièce choisie peut être posée
+            if (a.type !== selRes.type) continue;
+            const c = center(a.to);
+            hl += `<circle cx="${c.x}" cy="${c.y}" r="0.15" fill="#1f7a3d" fill-opacity="0.5"/>`;
+          }
+        }
         if (sel) {
           hl += rect(sel.sq, "#1f7a3d", 0.34);
           for (const t of sel.targets) {
@@ -2130,6 +2230,7 @@
                 top.querySelectorAll(".sel").forEach(x => x.classList.remove("sel"));
                 bottom.querySelectorAll(".sel").forEach(x => x.classList.remove("sel"));
                 tile.classList.add("sel");
+                renderShapes();
               }
               beginPieceDrag({ kind: "std", code: color + t }, "palette", e, tile);
             });
