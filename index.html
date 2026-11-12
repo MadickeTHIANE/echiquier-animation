@@ -1523,7 +1523,8 @@
               placement: ["K", "R", "B", "N"], royal: true,
               rules: [
                 "<b>Matériel :</b> chaque camp a un roi, une tour, un fou et un cavalier. L'échiquier de 16 cases est vide au départ.",
-                "<b>Placement :</b> chacun pose une pièce à son tour, les Blancs d'abord. Aucun roi ne doit se retrouver en échec pendant le placement.",
+                "<b>Placement :</b> chacun pose une pièce à son tour, les Blancs d'abord. Chaque joueur doit poser son roi en premier.",
+                "<b>Interdit</b> de poser une pièce qui met directement le roi adverse en échec. Les deux rois ne peuvent pas se toucher.",
                 "<b>Le roi</b> se déplace d'une case dans toutes les directions, jamais sur une case attaquée. Un roi en échec doit se mettre à l'abri.",
                 "<b>But :</b> mettre le roi adverse échec et mat.",
                 "<b>Comptage :</b> après 6 déplacements sans prise (3 par camp), ou si un joueur ne peut plus bouger sans être en échec, on additionne la valeur des pièces restantes : tour 5, fou 3, cavalier 3.",
@@ -1859,13 +1860,17 @@
         return !!k && piecesOf(other(c)).some(s => pseudoMoves(s).includes(k));
       }
       // Pose d'une pièce : case libre, et aucun roi ne doit se retrouver en échec.
-      function canPlace(side, type, to) {
-        if (!to || model[to]) return false;
-        if (!rule("royal")) return true;
+      function canPlace(side, type, to) { return !placeRefusal(side, type, to); }
+      // Pourquoi cette pose est refusée ("" si elle est permise).
+      function placeRefusal(side, type, to) {
+        if (!to || model[to]) return "Cette case est déjà occupée.";
+        if (!rule("royal")) return "";
+        if (type !== "K" && game.reserve[side].includes("K")) return "Posez d'abord votre roi.";
         model[to] = { kind: "std", code: side + type };
         const bad = inCheck("w") || inCheck("b");
         delete model[to];
-        return !bad;
+        if (!bad) return "";
+        return type === "K" ? "Les deux rois ne peuvent pas se toucher." : "Interdit : cette pièce mettrait le roi adverse en échec.";
       }
       function placements(side) {
         const types = [...new Set(game.reserve[side])], out = [];
@@ -1954,7 +1959,8 @@
           const i = game.reserve[side].indexOf(a.type);
           if (game.phase !== "place" || i < 0 || !a.to || model[a.to]) return false;
           // Si aucune pose n'est permise (cas rarissime avec les rois), toute case libre est acceptée.
-          if (!canPlace(side, a.type, a.to) && placements(side).length) { refusal = "Case interdite : un roi serait en échec."; return false; }
+          const why = placeRefusal(side, a.type, a.to);
+          if (why && placements(side).length) { refusal = why; return false; }
           game.note = "";
           game.reserve[side].splice(i, 1);
           model[a.to] = { kind: "std", code: side + a.type };
@@ -2365,6 +2371,7 @@
             fillPiece(tile, { kind: "std", code: color + t });
             if (placing) {
               if (color !== game.turn) tile.classList.add("off");
+              if (rule("royal") && t !== "K" && types.includes("K")) tile.classList.add("off");   // le roi d'abord
               if (selRes && selRes.color === color && selRes.type === t) tile.classList.add("sel");
             }
             tile.addEventListener("pointerdown", e => {
