@@ -17,8 +17,7 @@
      mad-neutre.png  (neutre et souriant)        mad-malin.png  (content, sourire en coin)
      mad-etonne.png  (étonné)                    mad-fier.png   (grand sourire fier)
      mad-decu.png    (moue de déception)
-   Une expression absente est remplacée par mad-neutre.png, puis par pieces/mad.png,
-   puis par un simple « M ».
+   Une expression absente est remplacée par mad-neutre.png, puis par un simple « M ».
    ===================================================================== */
 (function () {
   "use strict";
@@ -29,7 +28,7 @@
 
   const AVATARS = {
     neutre: "pieces/mad-neutre.png", malin: "pieces/mad-malin.png", etonne: "pieces/mad-etonne.png",
-    fier: "pieces/mad-fier.png", decu: "pieces/mad-decu.png", base: "pieces/mad.png"
+    fier: "pieces/mad-fier.png", decu: "pieces/mad-decu.png"
   };
   // L'expression de Mad selon ce qu'il dit.
   const MOOD = {
@@ -303,7 +302,10 @@
     if (bot.mine) say(d.captured ? "iCapture" : g.phase === "place" ? "place" : "yourTurn");
     else if (d.captured) say("youCapture");
     if (botTurn()) {                       // au tour de Mad (ou encore à lui si l'adversaire a dû passer)
-      if (bot.mine) bot.timer = setTimeout(schedule, 700); else schedule();
+      // Après une prise du joueur, Mad garde un instant sa réaction avant de se remettre à réfléchir.
+      if (bot.mine) bot.timer = setTimeout(schedule, 700);
+      else if (d.captured) bot.timer = setTimeout(schedule, 1300);
+      else schedule();
     }
   });
 
@@ -370,7 +372,7 @@
     card.classList.toggle("hidden", !show);
     if (!show) return;
     const L = LEVELS[bot.level];
-    const face = found[bot.mood] || found.neutre || found.base || "";
+    const face = found[bot.mood] || found.neutre || "";
     card.classList.toggle("thinking", bot.thinking);
     card.innerHTML = `
       <span class="bot-avatar${face ? " has-img" : ""}">${face ? `<img src="${face}" alt="">` : ""}<b>M</b></span>
