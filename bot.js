@@ -37,7 +37,7 @@
   // L'expression de Mad selon ce qu'il dit.
   const MOOD = {
     iCapture: "malin", youCapture: "etonne", noHint: "etonne", thinking: "pensif",
-    iWin: "fier", soloWin: "fier", levelUp: "fier", youWin: "decu", soloStuck: "decu"
+    iWin: "fier", soloWin: "fier", levelUp: "fier", youWin: "decu", soloStuck: "decu", pat: "malin", mated: "decu"
   };
   const STORE = "echecs-mad-bot-v1";
   const LEVELS = {
@@ -52,7 +52,13 @@
     const s = JSON.parse(localStorage.getItem(STORE) || "null");
     if (s) { bot.level = [0, 1, 2, 3].includes(s.level) ? s.level : 0; bot.side = s.side === "w" ? "w" : "b"; bot.muted = !!s.muted; }
   } catch (_) { }
-  const save = () => { try { localStorage.setItem(STORE, JSON.stringify({ level: bot.level, side: bot.side, muted: bot.muted })); } catch (_) { } };
+  const save = () => { try { localStorage.setItem(STORE, JSON.stringify({ level: bot.level, side: bot.wish || bot.side, muted: bot.muted })); } catch (_) { } };
+  // Certains modes imposent le camp de Mad (exercices de mat : il défend avec le roi seul) ; on retient le camp choisi pour les autres.
+  function fixSide() {
+    const forced = E.mode().botSide;
+    if (forced) { if (!bot.wish) bot.wish = bot.side; bot.side = forced; }
+    else if (bot.wish) { bot.side = bot.wish; bot.wish = null; }
+  }
 
   const other = c => (c === "w" ? "b" : "w");
   const pick = list => list[Math.floor(Math.random() * list.length)];
@@ -339,11 +345,111 @@
     return pick(scored.filter(x => x.v >= top - 1e-6)).a;
   }
 
+  /* ---------- Vraies parties d'échecs : Mad confie la réflexion à son moteur (moteur.js) ---------- */
+  // facile : voit un coup devant lui et se trompe souvent ; moyen : trois coups, quelques imprécisions ;
+  // fort : réfléchit un peu plus d'une seconde, sans erreur volontaire.
+  const CHESS_LEVELS = {
+    1: { depth: 1, ms: 300, noise: 150, blunder: 0.2, exact: true },
+    2: { depth: 3, ms: 600, noise: 50, blunder: 0, exact: true },
+    3: { depth: 64, ms: 1300, noise: 0, blunder: 0, exact: false }
+  };
+  // La position telle que le moteur l'attend.
+  function enginePosition(model, g) {
+    if (!model) { const st = E.state(); model = st.model; g = st.game; }
+    const pieces = {};
+    for (const sq in model) if (model[sq].kind === "std") pieces[sq] = model[sq].code;
+    return { pieces, turn: g.turn, castle: g.castle || "", ep: g.ep || null, half: g.quiet || 0 };
+  }
+  // Livre d'ouvertures facultatif (livre/mad.json) : les coups que Madické joue vraiment, position par position.
+  // { "<pièces> <trait> <roques> <en passant>": [["e2e4", 12], ["d2d4", 3]], … }
+  let book = null;
+  fetch("livre/mad.json", { cache: "no-cache" }).then(r => (r.ok ? r.json() : null)).then(j => { if (j && typeof j === "object") book = j; }).catch(() => { });
+  function bookKey() {
+    const p = enginePosition();
+    let rows = [];
+    for (let r = 8; r >= 1; r--) {
+      let row = "", gap = 0;
+      for (const f of "abcdefgh") {
+        const c = p.pieces[f + r];
+        if (!c) { gap++; continue; }
+        if (gap) { row += gap; gap = 0; }
+        row += c[0] === "w" ? c[1] : c[1].toLowerCase();
+      }
+      rows.push(row + (gap || ""));
+    }
+    return rows.join("/") + " " + p.turn + " " + (p.castle || "-") + " " + (p.ep || "-");
+  }
+  function bookMove(actions) {
+    const lines = book && book[bookKey()];
+    if (!Array.isArray(lines) || !lines.length) return null;
+    let total = 0;
+    for (const l of lines) total += Number(l[1]) || 0;
+    let x = Math.random() * total;
+    for (const l of lines) {
+      x -= Number(l[1]) || 0;
+      if (x <= 0) {
+        const mv = String(l[0]);
+        return actions.find(a => a.from + a.to + (a.promo ? a.promo.toLowerCase() : "") === mv) || null;
+      }
+    }
+    return null;
+  }
+  // Les coups de la position, notés par le moteur, du meilleur au moins bon (ou null sans moteur).
+  function engineMoves(L) {
+    const M = window.MoteurEchecs;
+    if (!M) return null;
+    // Le moteur reçoit aussi le passé de la partie : il sait ainsi quelles positions se répètent.
+    M.set(enginePosition(), E.past().filter(h => h.game && h.game.phase === "move").map(h => enginePosition(h.model, h.game)));
+    return M.think({ ms: L.ms, depth: L.depth, exact: L.exact, window: L.window || L.noise }).moves;
+  }
+  function chessAction(levelId, actions) {
+    const L = CHESS_LEVELS[levelId] || CHESS_LEVELS[2];
+    if (L.blunder && Math.random() < L.blunder) return pick(actions);
+    if (E.mode().castle && levelId >= 2) {             // partie classique : d'abord le répertoire de Madické
+      const b = bookMove(actions);
+      if (b) return b;
+    }
+    const moves = engineMoves(L);
+    if (!moves || !moves.length) return null;
+    moves.forEach(m => { m.v = m.score + (Math.random() * 2 - 1) * L.noise; });
+    moves.sort((x, y) => y.v - x.v);
+    return freshest(moves, actions);
+  }
+  // Le coup du moteur est toujours revérifié avec les règles de la page.
+  // Avec l'avantage, on évite de revenir dans une position déjà vue : tourner en rond mène à la nulle.
+  function freshest(moves, actions) {
+    const find = m => actions.find(a => a.from === m.from && a.to === m.to && (a.promo || null) === (m.promo || null));
+    const best = moves[0].score;
+    let fallback = null;
+    for (const m of moves) {
+      const a = find(m);
+      if (!a) continue;
+      if (!fallback) fallback = a;
+      if (best < 150) return a;
+      if (m.score < 150 || m.score < best - 100) break;
+      const keep = E.sim.save();
+      E.sim.apply(a);
+      const g = E.state().game, again = (g.phase === "over" && !g.result.winner) || E.seen() > 1;
+      E.sim.load(keep);
+      if (!again) return a;
+    }
+    return fallback;
+  }
+  // Le meilleur coup pour le camp au trait, à montrer comme indice.
+  function chessHint() {
+    const moves = engineMoves({ ms: 1000, depth: 64, exact: false, noise: 0 });
+    return moves && moves.length ? freshest(moves, E.sim.actions()) : null;
+  }
+
   function chooseAction(levelId) {
     const L = LEVELS[levelId] || LEVELS[2];
     const actions = ordered(E.sim.actions());
     if (!actions.length) return null;
     if (actions.length === 1) return actions[0];
+    if (E.mode().chess) {
+      const a = chessAction(levelId, actions);
+      if (a) return a;
+    }
     if (L.blunder && Math.random() < L.blunder) return pick(actions);      // étourderie volontaire
     if (L.exact) {
       const a = exactAction(actions);
@@ -413,6 +519,8 @@
     iWin: ["Cette fois c'est pour moi. On en refait une ?", "Gagné ! Tu veux ta revanche ?"],
     youWin: ["Bravo, tu m'as battu !", "Bien joué, c'est toi le plus fort aujourd'hui."],
     draw: ["Partie nulle. On remet ça ?"],
+    pat: ["Pat ! Mon roi n'est pas en échec, mais il ne peut plus bouger : partie nulle. Tu y étais presque."],
+    mated: ["Échec et mat ! Bien joué.", "Mat ! Mon roi n'a plus aucune case. Bravo !"],
     place: ["Je pose une pièce.", "Voilà, à toi de poser."],
     hint: ["Essaie par ici.", "Regarde cette case.", "Et si tu passais par là ?"],
     noHint: ["Là, je ne vois pas de chemin. Annule un coup et réessaie."],
@@ -428,13 +536,15 @@
     dalton: "Astuce : des pions qui se protègent avancent ensemble.",
     loup: "Astuce : un mouton capture en diagonale, même le loup.",
     sanglier: "Astuce : regarde les diagonales des chasseurs avant de sauter.",
-    mousquetaires: "Astuce : avant de poser une pièce, vérifie qu'elle ne peut pas être prise."
+    mousquetaires: "Astuce : avant de poser une pièce, vérifie qu'elle ne peut pas être prise.",
+    mat: "Astuce : attention au pat ! Tant que tu ne fais pas mat, laisse toujours une case à mon roi.",
+    classique: "Astuce : sors tes pièces, mets ton roi à l'abri avec le roque, et occupe le centre."
   };
   /* ---------- La voix de Mad (enregistrements facultatifs du dossier voix/) ---------- */
   // Nom des fichiers : <réplique>-<numéro>.mp3 ; l'astuce d'un mode : astuce-<mode>.mp3.
   const VOICE = {
     hello: "bonjour", youStart: "a-toi-de-commencer", iStart: "je-commence", thinking: "je-reflechis", yourTurn: "a-toi",
-    iCapture: "je-prends", youCapture: "tu-prends", iWin: "je-gagne", youWin: "tu-gagnes", draw: "nulle", place: "je-pose",
+    iCapture: "je-prends", youCapture: "tu-prends", iWin: "je-gagne", youWin: "tu-gagnes", draw: "nulle", pat: "pat", mated: "mat", place: "je-pose",
     hint: "indice", noHint: "pas-d-indice", solo: "defi", soloWin: "defi-reussi", soloStuck: "defi-bloque", levelUp: "niveau-suivant"
   };
   const CHATTER = { thinking: 1, yourTurn: 1, place: 1 };     // répliques de routine : dites une fois sur trois seulement
@@ -507,6 +617,11 @@
   }
 
   E.on("change", d => {
+    fixSide();
+    if (d && d.action) {                           // un coup vient d'être joué : la flèche d'indice n'a plus lieu d'être
+      const all = E.getShapes(), kept = all.filter(x => !x.hint);
+      if (kept.length !== all.length) E.setShapes(kept);
+    }
     if (E.mode().solo && game()) {                 // mode à un seul joueur : Mad commente et donne des indices
       cancel();
       const g = game();
@@ -528,7 +643,8 @@
     if (g.phase === "over") {
       cancel();
       const w = g.result.winner;
-      say(!w ? "draw" : w === bot.side ? "iWin" : g.result.up ? "levelUp" : "youWin");
+      const pat = !w && /^Pat/.test(g.result.reason || "");
+      say(pat ? "pat" : !w ? "draw" : w === bot.side ? "iWin" : g.result.up ? "levelUp" : E.mode().mateCount ? "mated" : "youWin");
       return;
     }
     if (!d.action) {                       // nouvelle partie, changement de mode…
@@ -585,7 +701,7 @@
           ${opt(3, "Mad · fort")}
         </select>
       </label>
-      ${bot.level ? `<label class="bot-label">Mad joue
+      ${bot.level && !m.botSide ? `<label class="bot-label">Mad joue
         <select id="botSide">
           <option value="w"${bot.side === "w" ? " selected" : ""}>${m.sides.w}</option>
           <option value="b"${bot.side === "b" ? " selected" : ""}>${m.sides.b}</option>
@@ -594,6 +710,10 @@
     document.getElementById("botLevel").addEventListener("change", e => {
       bot.level = Number(e.target.value); save(); restart();
     });
+    if (m.botSide && bot.level) {                      // exercices de mat : un indice à la demande
+      ctl.insertAdjacentHTML("beforeend", `<button class="btn" id="botHint" type="button">Un indice de Mad</button>`);
+      document.getElementById("botHint").addEventListener("click", giveHint);
+    }
     const side = document.getElementById("botSide");
     if (side) side.addEventListener("change", e => { bot.side = e.target.value === "w" ? "w" : "b"; save(); restart(); });
   }
@@ -635,7 +755,10 @@
   function giveHint() {
     const g = game();
     if (!g || g.phase === "over") return;
-    const a = soloHint();
+    let a = null;
+    if (E.mode().chess) {                            // exercice de mat : le moteur montre le meilleur coup
+      a = chessHint();
+    } else a = soloHint();
     if (!a) { say("noHint"); return; }
     const shapes = E.getShapes().filter(s => !(s.type === "arrow" && s.hint));
     shapes.push({ type: "arrow", from: a.from, to: a.to, color: "blue", hint: true });
@@ -643,6 +766,7 @@
     say("hint");
   }
 
+  fixSide();
   build();
   renderControls();
   // Au chargement : si une partie contre Mad était en cours de réglage, on la démarre proprement.
@@ -656,5 +780,5 @@
     if (now !== wasOnline) { wasOnline = now; cancel(); renderControls(); renderCard(); E.refresh(); }
   }, 700);
 
-  window.EchiquierBot = { state: () => bot, chooseAction, soloHint, evaluate, exact, solveExact, bareKey };
+  window.EchiquierBot = { state: () => bot, chooseAction, soloHint, evaluate, exact, solveExact, bareKey, engineMoves, chessHint };
 })();

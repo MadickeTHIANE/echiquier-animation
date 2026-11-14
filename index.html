@@ -1234,6 +1234,52 @@
       flex: 1 1 auto;
     }
 
+    .promo {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, .35);
+      border-radius: inherit;
+    }
+
+    .promo-card {
+      background: var(--card, #fffaf0);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .3);
+    }
+
+    .promo-card p {
+      margin: 0 0 8px;
+      font-weight: 600;
+    }
+
+    .promo-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .promo-btn {
+      width: 64px;
+      height: 64px;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #E8BE92;
+      cursor: pointer;
+    }
+
+    .promo-btn img {
+      width: 100%;
+      height: 100%;
+    }
+
     .bot-sound {
       flex: 0 0 auto;
       font: inherit;
@@ -1817,7 +1863,46 @@
           ]
         }
       };
-      const MODE_ORDER = ["free", "pions", "fous", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument"];
+      // Exercices de mat : règles communes, puis la méthode propre à chaque mat.
+      const MAT_RULES = [
+        "<b>But :</b> avec les Blancs, faire échec et mat au roi noir, qui est tout seul.",
+        "<b>Échec et mat :</b> le roi est attaqué et n'a plus aucun moyen d'y échapper.",
+        "<b>Attention au pat :</b> si le roi noir n'est pas en échec mais ne peut plus bouger, la partie est nulle. Elle l'est aussi après 50 coups sans prise, ou s'il ne reste plus assez de pièces pour mater."
+      ];
+      const STAIRS = "<b>Méthode de l'escalier :</b> une pièce garde une rangée, l'autre donne échec sur la suivante, et ainsi de suite, marche après marche, jusqu'au bord.";
+      MODES.mat = {
+        name: "Exercices de mat",
+        size: 8, first: "w", chess: true, royal: true, stuck: "pat", repetition: 3, mateCount: true, botSide: "b",
+        sides: { w: "Blancs", b: "Noirs" },
+        turnText: { w: "Aux Blancs de jouer", b: "Aux Noirs de jouer" },
+        winText: { repetition: "La même position s'est répétée trois fois : partie nulle." },
+        variants: [
+          { name: "Mat de l'escalier · deux dames", setup: ["e1 wK", "b1 wQ", "g1 wQ", "e5 bK"], rules: MAT_RULES.concat(STAIRS) },
+          { name: "Mat de l'escalier · dame et tour", setup: ["e1 wK", "b1 wQ", "h1 wR", "e5 bK"], rules: MAT_RULES.concat(STAIRS) },
+          { name: "Mat de l'escalier · deux tours", setup: ["e1 wK", "a1 wR", "h1 wR", "e5 bK"], rules: MAT_RULES.concat(STAIRS, "<b>Astuce :</b> si le roi noir s'approche d'une tour, envoyez-la à l'autre bout de sa rangée.") },
+          { name: "Le baiser de la dame · roi et dame", setup: ["e1 wK", "d1 wQ", "e5 bK"], rules: MAT_RULES.concat("<b>Méthode :</b> la dame enferme le roi noir dans une boîte de plus en plus petite, en se plaçant à un saut de cavalier de lui. Quand il est au bord, votre roi s'approche, puis la dame donne le baiser : mat collée au roi noir, protégée par votre roi.") },
+          { name: "Mat avec deux fous", setup: ["e1 wK", "c1 wB", "f1 wB", "e5 bK"], rules: MAT_RULES.concat("<b>Méthode :</b> les deux fous côte à côte forment un mur que le roi noir ne peut pas traverser. Avec l'aide de votre roi, repoussez-le dans un coin.") },
+          { name: "Mat avec fou et cavalier", setup: ["e1 wK", "c1 wB", "g1 wN", "e5 bK"], rules: MAT_RULES.concat("<b>Méthode :</b> le mat ne se donne que dans un coin de la couleur du fou. C'est le plus difficile des mats élémentaires : comptez vos coups, vous en avez 50.") }
+        ]
+      };
+      MODES.classique = {
+        name: "Partie classique",
+        size: 8, first: "w", chess: true, royal: true, castle: true, stuck: "pat", repetition: 3,
+        sides: { w: "Blancs", b: "Noirs" },
+        turnText: { w: "Aux Blancs de jouer", b: "Aux Noirs de jouer" },
+        winText: { repetition: "La même position s'est répétée trois fois : partie nulle." },
+        setup: ["a1 wR", "b1 wN", "c1 wB", "d1 wQ", "e1 wK", "f1 wB", "g1 wN", "h1 wR",
+          "a2 wP", "b2 wP", "c2 wP", "d2 wP", "e2 wP", "f2 wP", "g2 wP", "h2 wP",
+          "a7 bP", "b7 bP", "c7 bP", "d7 bP", "e7 bP", "f7 bP", "g7 bP", "h7 bP",
+          "a8 bR", "b8 bN", "c8 bB", "d8 bQ", "e8 bK", "f8 bB", "g8 bN", "h8 bR"],
+        rules: [
+          "<b>Une vraie partie d'échecs,</b> sans pendule : prenez tout votre temps.",
+          "<b>But :</b> faire échec et mat au roi adverse.",
+          "<b>Coups spéciaux :</b> le roque, la prise en passant et la promotion du pion sont permis.",
+          "<b>Partie nulle :</b> pat, même position répétée trois fois, 50 coups sans prise ni poussée de pion, ou plus assez de pièces pour mater."
+        ]
+      };
+      const MODE_ORDER = ["free", "pions", "fous", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument", "mat", "classique"];
 
       // Ce que cet appareil a le droit de voir (liste publiée, ou accès complet de l'animateur).
       const ACCES = window.ECHIQUIER_ACCES || { complet: true, modes: null, niveauxMousquetaires: 99, personnages: true, enLigne: true, charte: true, bot: true };
@@ -1935,6 +2020,7 @@
             for (const df of [-1, 1]) {
               const x = mkSq(f + df, r + d);
               if (x && model[x] && colorOf(model[x]) !== c) out.push(x);
+              else if (x && mode.chess && game && x === game.ep) out.push(x);      // prise en passant
             }
           }
           return out;
@@ -1978,14 +2064,41 @@
         const list = pseudoMoves(sq);
         if (!list.length || !rule("royal")) return list;
         const p = model[sq], c = p.code[0];
-        return list.filter(to => {
+        const legal = list.filter(to => {
           const taken = model[to];
+          // Prise en passant : le pion capturé n'est pas sur la case d'arrivée.
+          const side = (mode.chess && p.code[1] === "P" && !taken && to === game.ep) ? mkSq(fileIdx(to), rankOf(sq)) : null;
+          const sidePawn = side && model[side];
+          if (side) delete model[side];
           model[to] = p; delete model[sq];
           const safe = !inCheck(c);
           model[sq] = p;
           if (taken) model[to] = taken; else delete model[to];
+          if (side) model[side] = sidePawn;
           return safe;
         });
+        return mode.chess && p.code[1] === "K" ? legal.concat(castleMoves(sq, c)) : legal;
+      }
+      // La case est-elle attaquée par une pièce de la couleur `by` ?
+      function attackedBy(sq, by) {
+        return pawnAttacks(sq, by) || piecesOf(by).some(s => model[s].code[1] !== "P" && pseudoMoves(s).includes(sq));
+      }
+      // Roque : roi et tour n'ont jamais bougé, cases libres entre eux, et le roi ne part pas d'un échec,
+      // ne traverse pas une case attaquée et n'arrive pas sur une case attaquée.
+      function castleMoves(sq, c) {
+        const rights = game.castle || "", r = c === "w" ? 1 : 8, o = other(c), out = [];
+        if (!rights || sq !== "e" + r || inCheck(c)) return out;
+        const rook = s => model[s] && model[s].code === c + "R";
+        const free = (...list) => list.every(s => !model[s]);
+        const quiet = (...list) => list.every(s => !attackedBy(s, o));
+        if (rights.includes(c === "w" ? "K" : "k") && rook("h" + r) && free("f" + r, "g" + r) && quiet("f" + r, "g" + r)) out.push("g" + r);
+        if (rights.includes(c === "w" ? "Q" : "q") && rook("a" + r) && free("b" + r, "c" + r, "d" + r) && quiet("c" + r, "d" + r)) out.push("c" + r);
+        return out;
+      }
+      // Assez de pièces pour faire mat ? (roi seul, ou roi + une seule pièce mineure : non)
+      function canStillMate() {
+        const rest = Object.keys(model).map(s => model[s].code[1]).filter(t => t !== "K");
+        return !(rest.length === 0 || (rest.length === 1 && (rest[0] === "B" || rest[0] === "N")));
       }
       function kingSquare(c) { return Object.keys(model).find(s => model[s].kind === "std" && model[s].code === c + "K") || null; }
       function inCheck(c) {
@@ -2015,7 +2128,8 @@
       }
       // Signature d'une position (pièces + trait), pour compter les répétitions.
       function positionKey() {
-        return Object.keys(model).sort().map(s => s + (model[s].code || "")).join(",") + "|" + game.turn;
+        return Object.keys(model).sort().map(s => s + (model[s].code || "")).join(",") + "|" + game.turn +
+          (mode.chess ? "|" + (game.castle || "") + "|" + (game.ep || "") : "");
       }
       function countPosition() {
         const k = positionKey();
@@ -2042,6 +2156,10 @@
           reason += ` Réussi en ${n} coup${n > 1 ? "s" : ""}.`;
           if (par) reason += n <= par ? " C'est le minimum possible, bravo !" : ` Le minimum est ${par} : essayez de faire mieux.`;
         }
+        if (mode.mateCount && winner) {                // exercice de mat : en combien de coups ?
+          const n = Math.ceil(game.moves / 2);
+          reason += ` Mat en ${n} coup${n > 1 ? "s" : ""}.`;
+        }
         game.result = { winner, reason };
       }
       function endByPoints(lead) {
@@ -2064,6 +2182,7 @@
         }
         const o = other(side);
         if (check) { end(o, "Échec et mat : le roi " + (side === "w" ? "blanc" : "noir") + " ne peut plus s'échapper."); return; }
+        if (mode.stuck === "pat") { end(null, "Pat : le roi " + (side === "w" ? "blanc" : "noir") + " n'est pas en échec, mais son camp n'a plus aucun coup permis. Partie nulle."); return; }
         if (mode.stuck === "points") { endByPoints(`${mode.sides[side]} : aucun coup possible.`); return; }
         if (mode.stuck === "count") {            // blocage : celui qui a le plus de pièces gagne
           const w = piecesOf("w").length, b = piecesOf("b").length;
@@ -2113,6 +2232,7 @@
           game.last = { from: a.from, to: a.to };
           game.quiet = captured ? 0 : game.quiet + 1;
           game.moves = (game.moves || 0) + 1;
+          if (mode.chess) chessExtras(a, piece, side, !!captured);
           const g = mode.goals || {}, wt = mode.winText || {};
           const lastRank = side === "w" ? N : 1;
           const tg = g.target;
@@ -2127,12 +2247,36 @@
           } else {
             if (!mode.solo) game.turn = other(side);
             afterTurnChange();
+            if (mode.chess && game.phase !== "over") {
+              if (!canStillMate()) end(null, "Il ne reste plus assez de pièces pour faire mat : partie nulle.");
+              else if (game.quiet >= 100) end(null, "50 coups sans prise ni poussée de pion : partie nulle.");
+            }
             if (mode.repetition && game.phase !== "over" && countPosition() >= mode.repetition) {
               end(mode.repWinner || null, wt.repetition || "La même position s'est répétée : partie nulle.");
             }
           }
         } else return false;
         return true;
+      }
+
+      // Règles propres aux échecs complets : prise en passant, roque, promotion, droits de roque.
+      function chessExtras(a, piece, side, captured) {
+        const t = piece.code[1], ff = fileIdx(a.from), tf = fileIdx(a.to), fr = rankOf(a.from), tr = rankOf(a.to);
+        if (t === "P" && !captured && a.to === game.ep) { delete model[mkSq(tf, fr)]; captured = true; }
+        if (t === "K" && Math.abs(tf - ff) === 2) {                 // roque : la tour passe de l'autre côté du roi
+          const rookFrom = (tf > ff ? "h" : "a") + fr, rookTo = (tf > ff ? "f" : "d") + fr;
+          model[rookTo] = model[rookFrom]; delete model[rookFrom];
+        }
+        if (t === "P" && tr === (side === "w" ? N : 1)) {           // promotion (dame par défaut)
+          model[a.to] = { kind: "std", code: side + (["Q", "R", "B", "N"].includes(a.promo) ? a.promo : "Q") };
+        }
+        const lost = { e1: "KQ", a1: "Q", h1: "K", e8: "kq", a8: "q", h8: "k" };
+        let rights = game.castle || "";
+        for (const s of [a.from, a.to]) for (const ch of (lost[s] || "")) rights = rights.replace(ch, "");
+        game.castle = rights;
+        const mid = mkSq(ff, (fr + tr) / 2);
+        game.ep = (t === "P" && Math.abs(tr - fr) === 2 && pawnAttacks(mid, other(side))) ? mid : null;
+        if (captured || t === "P") game.quiet = 0;
       }
 
       // Every change to a refereed game goes through here: one small serialisable action.
@@ -2173,7 +2317,11 @@
           }
           return out;
         }
-        for (const from of piecesOf(side)) for (const to of movesFrom(from)) out.push({ t: "move", from, to });
+        for (const from of piecesOf(side)) for (const to of movesFrom(from)) {
+          if (mode.chess && model[from].code[1] === "P" && rankOf(to) === (side === "w" ? N : 1)) {
+            for (const promo of ["Q", "N", "R", "B"]) out.push({ t: "move", from, to, promo });
+          } else out.push({ t: "move", from, to });
+        }
         return out;
       }
       // Copie légère de la partie, pour essayer des coups puis revenir en arrière (les pièces ne sont jamais modifiées).
@@ -2196,7 +2344,8 @@
           phase: rule("placement") ? "place" : "move",
           turn: mode.first || "w",
           reserve: { w: (rule("placement") || []).slice(), b: (rule("placement") || []).slice() },
-          quiet: 0, moves: 0, last: null, result: null, note: ""
+          quiet: 0, moves: 0, last: null, result: null, note: "",
+          castle: mode.castle ? "KQkq" : "", ep: null
         };
         if (game.referee && game.phase === "move") afterTurnChange();
         if (game.referee && mode.repetition && game.phase !== "over") countPosition();
@@ -2300,7 +2449,8 @@
         return {
           referee: !!g.referee, phase: phase === "over" && !res ? "move" : phase, turn: side(g.turn),
           reserve: { w: types(g.reserve && g.reserve.w), b: types(g.reserve && g.reserve.b) },
-          quiet: num(g.quiet), moves: num(g.moves), last, result: res, note: String(g.note || ""), rep
+          quiet: num(g.quiet), moves: num(g.moves), last, result: res, note: String(g.note || ""), rep,
+          castle: String(g.castle || "").replace(/[^KQkq]/g, "").slice(0, 4), ep: validSq(g.ep) ? g.ep : null
         };
       }
 
@@ -2645,7 +2795,7 @@
         }
         model[a.origin] = a.piece;
         if (sq && sq !== a.origin && sel && sel.targets.includes(sq)) {
-          doAction({ t: "move", from: a.origin, to: sq });
+          playMove(a.origin, sq);
         } else {
           if (sq !== a.origin) sel = null;             // dropped back on its square = stays selected
           renderPieces(); renderShapes();
@@ -2658,8 +2808,36 @@
           if (selRes && !model[sq]) return doAction({ t: "place", type: selRes.type, to: sq });
           return false;
         }
-        if (sel && sel.targets.includes(sq)) return doAction({ t: "move", from: sel.sq, to: sq });
+        if (sel && sel.targets.includes(sq)) return playMove(sel.sq, sq);
         return false;
+      }
+      // Joue un coup demandé à la souris ou au doigt ; un pion qui arrive au bout choisit d'abord sa pièce.
+      function playMove(from, to) {
+        const p = model[from];
+        if (mode.chess && p && p.code[1] === "P" && rankOf(to) === (p.code[0] === "w" ? N : 1)) {
+          askPromotion(p.code[0], promo => doAction({ t: "move", from, to, promo }));
+          return true;
+        }
+        return doAction({ t: "move", from, to });
+      }
+      function askPromotion(color, done) {
+        const old = document.getElementById("promo");
+        if (old) old.remove();
+        const box = document.createElement("div");
+        box.id = "promo"; box.className = "promo";
+        box.innerHTML = '<div class="promo-card"><p>En quelle pièce transformer le pion ?</p><div class="promo-row"></div></div>';
+        const row = box.querySelector(".promo-row");
+        const close = () => { box.remove(); sel = null; refresh(); };
+        [["Q", "Dame"], ["R", "Tour"], ["B", "Fou"], ["N", "Cavalier"]].forEach(([t, label]) => {
+          const b = document.createElement("button");
+          b.type = "button"; b.className = "promo-btn"; b.title = label; b.setAttribute("aria-label", label);
+          fillPiece(b, { kind: "std", code: color + t });
+          b.addEventListener("click", e => { e.stopPropagation(); box.remove(); done(t); });
+          row.appendChild(b);
+        });
+        box.addEventListener("click", e => { if (e.target === box) close(); });   // clic à côté : on annule
+        $("boardShell").appendChild(box);
+        renderPieces(); renderShapes();
       }
       function selectSquare(sq) {
         sel = canLift(sq) ? { sq, targets: movesFrom(sq) } : null;
@@ -3095,7 +3273,7 @@
       window.Echiquier = window.__echiquier = {
         MODES, on, guards, statusExtras, acces: ACCES,
         setMode, doAction, newGame, undo, refresh, toast, sim, VALUE,
-        exportState, importState,
+        seen: () => (game && game.rep ? game.rep[positionKey()] || 0 : 0), past: () => history.map(h => { const o = JSON.parse(h); return { model: o.model, game: o.g }; }), exportState, importState,
         getShapes: () => JSON.parse(JSON.stringify(shapes)), setShapes,
         setOrientation: o => { orientation = o === "black" ? "black" : "white"; refresh(); },
         mode: () => mode, refereed,
@@ -3104,6 +3282,7 @@
     })();
   </script>
   <script src="net.js"></script>
+  <script src="moteur.js"></script>
   <script src="bot.js"></script>
 </body>
 
