@@ -5,34 +5,34 @@ Tout le code du site est déjà présent. Ce que le public voit dépend d'une se
 
 ## Les branches
 
-Chaque branche `reel/NN-…` contient la précédente et ne change qu'une ligne de cette liste.
+Chaque branche `etape/NN-…` contient la précédente et ne change qu'une ligne de cette liste.
 Pour publier la nouveauté de la semaine, il suffit d'avancer `main` sur la branche suivante.
 
 | Branche | Ce qui devient visible |
 |---|---|
-| `reel/00-socle` | Rien de plus que l'animation libre (reel « Présentation ») |
-| `reel/01-bataille-de-pions` | Bataille de pions |
-| `reel/02-pions-contre-fous` | Les pions contre les fous |
-| `reel/03-lucky-luke` | Lucky Luke contre les Dalton (pions contre tour) |
-| `reel/04-cavalier-et-jument` | Le Cavalier et sa jument |
-| `reel/05-sanglier` | Sanglier contre chasseur (cavalier contre fous) |
-| `reel/06-loup` | Loup dans la bergerie (dame contre pions) |
-| `reel/07-personnages` | Les images de personnages à la place des pièces |
-| `reel/08-duel-des-rois` | Le duel des rois (l'opposition) |
-| `reel/09-16-cases-dame` | Les 4 Mousquetaires, niveau 1 · la dame |
-| `reel/10-16-cases-pion` | Les 4 Mousquetaires, niveau 2 · le pion |
-| `reel/11-16-cases-roi` | Les 4 Mousquetaires, niveau 3 · le roi |
-| `reel/12-bot-mad` | Mad, le bot |
-| `reel/13-defi-tour` | Défi de la tour (hors liste, placé à la suite) |
-| `reel/14-defi-fou` | Défi du fou (hors liste, placé à la suite) |
-| `reel/15-jouer-en-ligne` | Jouer en ligne (hors liste, placé à la suite) |
-| `reel/16-charte-graphique` | Mode sombre et police Poppins (hors liste, placé à la suite) |
+| `etape/00-socle` | Rien de plus que l'animation libre (reel « Présentation ») |
+| `etape/01-bataille-de-pions` | Bataille de pions |
+| `etape/02-defi-tour` | Défi de la tour |
+| `etape/03-lucky-luke` | Lucky Luke contre les Dalton (pions contre tour) |
+| `etape/04-defi-fou` | Défi du fou |
+| `etape/05-pions-contre-fous` | Les pions contre les fous |
+| `etape/06-cavalier-et-jument` | Le Cavalier et sa jument |
+| `etape/07-sanglier` | Sanglier contre chasseur (cavalier contre fous) |
+| `etape/08-loup` | Loup dans la bergerie (dame contre pions) |
+| `etape/09-personnages` | Les images de personnages à la place des pièces |
+| `etape/10-duel-des-rois` | Le duel des rois (l'opposition) |
+| `etape/11-16-cases-dame` | Les 4 Mousquetaires, niveau 1 · la dame |
+| `etape/12-16-cases-pion` | Les 4 Mousquetaires, niveau 2 · le pion |
+| `etape/13-16-cases-roi` | Les 4 Mousquetaires, niveau 3 · le roi |
+| `etape/14-bot-mad` | Mad, le bot |
+| `etape/15-jouer-en-ligne` | Jouer en ligne |
+| `etape/16-charte-graphique` | Mode sombre et police Poppins |
 
 Exemple, pour publier la bataille de pions :
 
 ```bash
 git checkout main
-git merge --ff-only origin/reel/01-bataille-de-pions
+git merge --ff-only origin/etape/01-bataille-de-pions
 git push
 ```
 
