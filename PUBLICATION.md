@@ -27,6 +27,8 @@ Pour publier la nouveauté de la semaine, il suffit d'avancer `main` sur la bran
 | `etape/14-bot-mad` | Mad, le bot |
 | `etape/15-jouer-en-ligne` | Jouer en ligne |
 | `etape/16-charte-graphique` | Mode sombre et police Poppins |
+| `etape/17-exercices-de-mat` | Exercices de mat contre Mad |
+| `etape/18-partie-classique` | Partie classique, à deux ou contre Mad |
 
 Exemple, pour publier la bataille de pions :
 
