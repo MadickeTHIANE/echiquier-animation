@@ -58,8 +58,43 @@
     return loaded[src];
   }
   // Réglage facultatif (tests, serveur PeerJS personnel) : localStorage["echecs-mad-peer"] = options JSON.
+  // Par défaut : plusieurs serveurs pour que deux appareils sur des réseaux différents se trouvent
+  // (STUN : découvrir son adresse publique ; TURN : relais de secours fourni par PeerJS).
+  const ICE = [
+    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:stun2.l.google.com:19302"] },
+    { urls: "stun:stun.cloudflare.com:3478" },
+    { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"], username: "peerjs", credential: "peerjsp" }
+  ];
   function peerOptions() {
-    try { return JSON.parse(localStorage.getItem("echecs-mad-peer") || "null") || {}; } catch (_) { return {}; }
+    let o = {};
+    try { o = JSON.parse(localStorage.getItem("echecs-mad-peer") || "null") || {}; } catch (_) { }
+    if (!o.config) o.config = { iceServers: ICE, sdpSemantics: "unified-plan" };
+    return o;
+  }
+  // Ce qui s'est passé pendant la tentative de connexion, pour expliquer un échec.
+  const diag = { signal: false, error: "", ice: "", kinds: {} };
+  function watch(conn) {
+    try {
+      const pc = conn.peerConnection;
+      if (!pc) return;
+      pc.addEventListener("iceconnectionstatechange", () => { diag.ice = pc.iceConnectionState; });
+      pc.addEventListener("icecandidate", e => {
+        const c = e.candidate && e.candidate.candidate;
+        const m = c && / typ ([a-z]+)/.exec(c);
+        if (m) diag.kinds[m[1]] = true;
+      });
+    } catch (_) { }
+  }
+  function diagText() {
+    const kinds = Object.keys(diag.kinds).join("+") || "aucune";
+    const err = String(diag.error || "").replace(/[^a-z-]/gi, "") || "aucune";
+    return "Détail technique : mise en relation " + (diag.signal ? "ok" : "sans réponse") + " · liaison " + (diag.ice || "non commencée") +
+      " · adresses " + kinds + " · erreur " + err + ".";
+  }
+  function whyFailed() {
+    if (!diag.signal) return "Le service de mise en relation ne répond pas depuis cet appareil. Vérifiez la connexion Internet, ou essayez un autre réseau.";
+    if (diag.error === "peer-unavailable") return "Aucune partie ouverte ne correspond au code " + net.code + ". Vérifiez que l'écran de la personne qui a créé la partie est resté allumé, sur la page du jeu.";
+    return "Les deux appareils n'arrivent pas à se joindre. Cela arrive quand ils sont sur deux réseaux différents (par exemple le Wi-Fi d'un côté, la 4G de l'autre) : mettez-les sur le même Wi-Fi, ou sur le partage de connexion du même téléphone.";
   }
   const peerId = code => ID_PREFIX + code.toLowerCase();
   function randomCode() {
@@ -249,10 +284,16 @@
     if (net.mode !== "guest") return;
     const peer = new window.Peer(peerOptions());
     net.peer = peer;
+    diag.signal = false; diag.error = ""; diag.ice = ""; diag.kinds = {};
+    // Sans réponse du service de mise en relation, on ne reste pas bloqué sur « Connexion en cours ».
+    clearTimeout(net.timer);
+    net.timer = setTimeout(() => { if (net.peer === peer && net.status !== "connected") lost(); }, CONNECT_MS);
     peer.on("open", () => {
       if (net.peer !== peer) return;
+      diag.signal = true;
       const conn = peer.connect(peerId(net.code), { reliable: true });
       net.conn = conn;
+      watch(conn);
       // Certains réseaux (écoles, entreprises) bloquent ce type de connexion : sans réponse, on réessaie.
       clearTimeout(net.timer);
       net.timer = setTimeout(() => { if (net.conn === conn && net.status !== "connected") lost(); }, CONNECT_MS);
@@ -264,6 +305,7 @@
     peer.on("error", err => {
       if (net.peer !== peer) return;
       const type = err && err.type;
+      diag.error = type || "inconnue";
       if (type === "peer-unavailable" && !net.everConnected && net.retries === 0) {
         fail("Aucune partie ne correspond au code " + net.code + ". Vérifiez-le auprès de la personne qui a créé la partie.");
       } else lost();
@@ -316,7 +358,7 @@
     clearTimeout(net.timer);
     net.retries++;
     if (!net.everConnected && net.retries >= MAX_FIRST_TRIES) {
-      return fail("Connexion impossible. Ce réseau bloque peut-être le jeu en ligne : essayez avec un autre réseau, par exemple le partage de connexion d'un téléphone.");
+      return fail("Connexion impossible. " + whyFailed() + "<br><small>" + diagText() + "</small>");
     }
     if (net.retries > MAX_RETRIES) return fail("La connexion a été perdue.");
     net.status = "reconnecting";
@@ -389,7 +431,9 @@
     if (net.status === "error") return dot("off") + net.error;
     if (net.status === "ended") return dot("off") + "La personne qui avait créé la partie l'a quittée.";
     if (net.status === "opening") return dot("wait") + "Connexion en cours…";
-    if (net.status === "reconnecting") return dot("wait") + "Connexion perdue, nouvelle tentative…";
+    if (net.status === "reconnecting") return dot("wait") + (net.everConnected
+      ? "Connexion perdue, nouvelle tentative…"
+      : "Toujours pas de réponse, nouvel essai (" + (net.retries + 1) + " sur " + MAX_FIRST_TRIES + ")…");
     const m = E.mode();
     if (net.mode === "host") {
       const p = hostPlayer(), spect = net.guests.length - (p ? 1 : 0);
