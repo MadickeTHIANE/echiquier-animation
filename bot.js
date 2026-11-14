@@ -423,6 +423,7 @@
   };
   const TIPS = {
     pions: "Astuce : un pion tout seul se fait prendre, avance-les ensemble.",
+    fous: "Astuce : un pion gardé par son voisin, le fou n'ose pas le prendre.",
     opposition: "Astuce : mets ton roi juste en face du mien, avec une case entre nous.",
     dalton: "Astuce : des pions qui se protègent avancent ensemble.",
     loup: "Astuce : un mouton capture en diagonale, même le loup.",
