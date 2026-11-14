@@ -14,22 +14,13 @@
        ===================================================================== */
     window.ECHIQUIER_PUBLIE = {
       modes: [
-        "free",
-        "pions",
-        "fous",
-        "dalton",
-        "defiTour",
-        "defiFou",
-        "sanglier",
-        "jument",
-        "loup",
-        "mousquetaires",
-        "opposition"
+        "free"
       ],
-      niveauxMousquetaires: 3,
-      enLigne: true,
-      charte: true,
-      bot: true
+      niveauxMousquetaires: 1,
+      personnages: false,
+      enLigne: false,
+      charte: false,
+      bot: false
     };
   </script>
   <script>
@@ -45,10 +36,10 @@
       } catch (e) { }
       var P = window.ECHIQUIER_PUBLIE || {};
       window.ECHIQUIER_ACCES = complet
-        ? { complet: true, modes: null, niveauxMousquetaires: 99, enLigne: true, charte: true, bot: true }
+        ? { complet: true, modes: null, niveauxMousquetaires: 99, personnages: true, enLigne: true, charte: true, bot: true }
         : {
           complet: false, modes: P.modes || ["free"], niveauxMousquetaires: P.niveauxMousquetaires || 1,
-          enLigne: !!P.enLigne, charte: !!P.charte, bot: !!P.bot
+          personnages: !!P.personnages, enLigne: !!P.enLigne, charte: !!P.charte, bot: !!P.bot
         };
 
       // Thème appliqué avant l'affichage. Sans la charte graphique : thème clair d'origine.
@@ -1821,7 +1812,7 @@
       const MODE_ORDER = ["free", "pions", "fous", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument"];
 
       // Ce que cet appareil a le droit de voir (liste publiée, ou accès complet de l'animateur).
-      const ACCES = window.ECHIQUIER_ACCES || { complet: true, modes: null, niveauxMousquetaires: 99, enLigne: true, charte: true, bot: true };
+      const ACCES = window.ECHIQUIER_ACCES || { complet: true, modes: null, niveauxMousquetaires: 99, personnages: true, enLigne: true, charte: true, bot: true };
       const visibleModes = MODE_ORDER.filter(id => id === "free" || !ACCES.modes || ACCES.modes.includes(id));
       // Variantes proposées dans le menu (les niveaux des Mousquetaires se dévoilent un à un).
       const shownVariants = m => !m.variants ? null
@@ -2233,12 +2224,11 @@
         $("refWrap").classList.toggle("hidden", modeId === "free" || !!mode.refereeOff);
         const setupLines = (variant && variant.setup) || mode.setup || [];
         const hasSkins = setupLines.some(line => line.split(" ").length > 2);
-        $("skinWrap").classList.toggle("hidden", modeId === "free" || !hasSkins);
+        $("skinWrap").classList.toggle("hidden", modeId === "free" || !hasSkins || !ACCES.personnages);
 
         $("rulesBody").innerHTML = modeId === "free" ? "" :
           "<ul>" + rule("rules").map(r => `<li>${r}</li>`).join("") +
-          (rule("par") ? `<li><b>Défi :</b> y arriver en ${rule("par")} coups, le minimum possible.</li>` : "") + "</ul>" +
-          (mode.source && !ACCES.charte ? `<p class="src">Source : ${mode.source}</p>` : "");
+          (rule("par") ? `<li><b>Défi :</b> y arriver en ${rule("par")} coups, le minimum possible.</li>` : "") + "</ul>";
 
         try { localStorage.setItem(MODE_KEY, JSON.stringify({ id: modeId, v: variantIdx })); } catch (_) { }
       }
@@ -2375,7 +2365,7 @@
           im.src = STD_DIR + "/" + piece.code + ".svg";
           host.appendChild(im);
         };
-        const src = piece.kind === "img" ? piece.src : (piece.skin && showSkins ? piece.skin : null);
+        const src = piece.kind === "img" ? piece.src : (piece.skin && showSkins && ACCES.personnages ? piece.skin : null);
         if (!src) { std(); return; }
         const img = document.createElement("img");
         img.draggable = false; img.alt = "";

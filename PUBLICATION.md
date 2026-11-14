@@ -5,32 +5,34 @@ Tout le code du site est déjà présent. Ce que le public voit dépend d'une se
 
 ## Les branches
 
-Chaque branche `publication/NN-…` contient la précédente et ne change qu'une ligne de cette liste.
+Chaque branche `reel/NN-…` contient la précédente et ne change qu'une ligne de cette liste.
 Pour publier la nouveauté de la semaine, il suffit d'avancer `main` sur la branche suivante.
 
 | Branche | Ce qui devient visible |
 |---|---|
-| `publication/00-socle` | Rien de nouveau : seule l'animation libre est visible |
-| `publication/01-mode-bataille-de-pions` | Bataille de pions |
-| `publication/01b-mode-pions-contre-fous` | Les pions contre les fous |
-| `publication/02-mode-lucky-luke` | Lucky Luke contre les Dalton |
-| `publication/03-mode-defi-tour` | Défi de la tour |
-| `publication/04-mode-defi-fou` | Défi du fou |
-| `publication/05-mode-sanglier` | Sanglier contre chasseur |
-| `publication/06-mode-cavalier-jument` | Le Cavalier et sa jument |
-| `publication/07-mode-loup` | Loup dans la bergerie |
-| `publication/08-mode-mousquetaires` | Les 4 Mousquetaires, niveau 1 |
-| `publication/09-mode-mousquetaires-niveaux` | Les 4 Mousquetaires, niveaux 2 et 3 |
-| `publication/10-mode-duel-des-rois` | Le duel des rois (l'opposition) |
-| `publication/11-multijoueur` | Jouer en ligne |
-| `publication/12-charte-graphique` | Mode sombre, police Poppins, règles sans sources |
-| `publication/13-bot-mad` | Mad, le bot |
+| `reel/00-socle` | Rien de plus que l'animation libre (reel « Présentation ») |
+| `reel/01-bataille-de-pions` | Bataille de pions |
+| `reel/02-pions-contre-fous` | Les pions contre les fous |
+| `reel/03-lucky-luke` | Lucky Luke contre les Dalton (pions contre tour) |
+| `reel/04-cavalier-et-jument` | Le Cavalier et sa jument |
+| `reel/05-sanglier` | Sanglier contre chasseur (cavalier contre fous) |
+| `reel/06-loup` | Loup dans la bergerie (dame contre pions) |
+| `reel/07-personnages` | Les images de personnages à la place des pièces |
+| `reel/08-duel-des-rois` | Le duel des rois (l'opposition) |
+| `reel/09-16-cases-dame` | Les 4 Mousquetaires, niveau 1 · la dame |
+| `reel/10-16-cases-pion` | Les 4 Mousquetaires, niveau 2 · le pion |
+| `reel/11-16-cases-roi` | Les 4 Mousquetaires, niveau 3 · le roi |
+| `reel/12-bot-mad` | Mad, le bot |
+| `reel/13-defi-tour` | Défi de la tour (hors liste, placé à la suite) |
+| `reel/14-defi-fou` | Défi du fou (hors liste, placé à la suite) |
+| `reel/15-jouer-en-ligne` | Jouer en ligne (hors liste, placé à la suite) |
+| `reel/16-charte-graphique` | Mode sombre et police Poppins (hors liste, placé à la suite) |
 
 Exemple, pour publier la bataille de pions :
 
 ```bash
 git checkout main
-git merge --ff-only origin/publication/01-mode-bataille-de-pions
+git merge --ff-only origin/reel/01-bataille-de-pions
 git push
 ```
 
