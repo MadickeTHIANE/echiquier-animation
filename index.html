@@ -1223,6 +1223,27 @@
       color: var(--ink);
     }
 
+    .bot-text {
+      flex: 1 1 auto;
+    }
+
+    .bot-sound {
+      flex: 0 0 auto;
+      font: inherit;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+
+    .bot-sound[aria-pressed="true"] {
+      color: var(--ink);
+      border-color: var(--accent);
+    }
+
     .bot-card.thinking .bot-avatar {
       animation: bot-think 1s ease-in-out infinite;
     }
@@ -1615,17 +1636,13 @@
             captureAll: { b: "Le loup a dévoré tous les moutons.", w: "Les moutons ont capturé le loup." },
             stuck: { w: "Les moutons sont bloqués : le loup gagne.", b: "Le loup est bloqué : les moutons gagnent." }
           },
-          variants: [
-            { name: "Initiation · les moutons ne capturent pas", pawnCaptures: false },
-            { name: "Les moutons capturent en diagonale", pawnCaptures: true }
-          ],
           setup: ["d8 bQ Loup.jpg", "a2 wP Blanquette.jpg", "b2 wP Blanquette.jpg", "c2 wP Blanquette.jpg", "d2 wP Blanquette.jpg",
             "e2 wP Blanquette.jpg", "f2 wP Blanquette.jpg", "g2 wP Blanquette.jpg", "h2 wP Blanquette.jpg"],
           rules: [
             "<b>Mise en place :</b> le loup (dame) en d8, les 8 moutons (pions) sur la 2e rangée. Les moutons commencent.",
             "<b>Les moutons</b> avancent comme des pions et jouent ensemble. Ils gagnent si l'un d'eux atteint la 8e rangée.",
-            "<b>Le loup</b> se déplace comme une dame. Il gagne s'il capture tous les moutons ou s'il les bloque.",
-            "<b>En initiation,</b> les moutons ne capturent pas en diagonale (variante à choisir dans le menu)."
+            "<b>Attention au loup :</b> comme tout pion, un mouton capture en diagonale. Si le loup se pose devant lui, en diagonale, le mouton peut le capturer et les moutons gagnent.",
+            "<b>Le loup</b> se déplace comme une dame. Il gagne s'il capture tous les moutons ou s'il les bloque."
           ],
           source: "Fiche animation n°1 « Le Loup et les Moutons », J. Cappon."
         },
@@ -1641,17 +1658,18 @@
             captureAll: { b: "Les chasseurs ont capturé le sanglier.", w: "Le sanglier a renversé tous les chasseurs." }
           },
           variants: [
-            { name: "Niveau 1 · 2 chasseurs", setup: ["d1 wN Sanglier.png", "c8 bB Chasseur.png", "f8 bB Chasseur.png"] },
-            { name: "Niveau 2 · 3 chasseurs", setup: ["d1 wN Sanglier.png", "a8 bB Chasseur.png", "c8 bB Chasseur.png", "f8 bB Chasseur.png"] },
+            { name: "Niveau 1 · 2 chasseurs", next: 1, setup: ["d1 wN Sanglier.png", "c8 bB Chasseur.png", "f8 bB Chasseur.png"] },
+            { name: "Niveau 2 · 3 chasseurs", next: 2, setup: ["d1 wN Sanglier.png", "a8 bB Chasseur.png", "c8 bB Chasseur.png", "f8 bB Chasseur.png"] },
             { name: "Niveau 3 · 4 chasseurs", setup: ["d1 wN Sanglier.png", "a8 bB Chasseur.png", "c8 bB Chasseur.png", "f8 bB Chasseur.png", "h8 bB Chasseur.png"] },
-            { name: "Pumba et les 3 hyènes", setup: ["d1 wN Pumba.png", "a8 bB Shenzi.png", "c8 bB Banzaï.png", "f8 bB Ed.png"] },
+            { name: "Pumba et les 3 hyènes", next: 4, nextText: "Scar entre en scène !", setup: ["d1 wN Pumba.png", "a8 bB Shenzi.png", "c8 bB Banzaï.png", "f8 bB Ed.png"] },
             { name: "Pumba, les hyènes et Scar", setup: ["d1 wN Pumba.png", "a8 bB Shenzi.png", "c8 bB Banzaï.png", "f8 bB Ed.png", "h8 bB Scar.png"] }
           ],
           rules: [
             "<b>Mise en place :</b> le sanglier (cavalier) en d1, les chasseurs (fous) en c8 et f8. Le sanglier commence.",
             "<b>Le sanglier</b> gagne s'il atteint n'importe quelle case de la 8e rangée, son terrier.",
             "<b>Les chasseurs</b> gagnent s'ils capturent le sanglier.",
-            "Partie sans roi, les pièces jouent normalement. <b>Progression :</b> un 3e chasseur en a8, puis un 4e en h8."
+            "Partie sans roi, les pièces jouent normalement.",
+            "<b>Progression :</b> quand le sanglier s'échappe, on passe au niveau suivant : un 3e chasseur en a8, puis un 4e en h8."
           ],
           source: "Fiche animation n°2 « Les Chasseurs et le Sanglier », J. Cappon."
         },
@@ -1703,39 +1721,51 @@
 
         defiTour: {
           name: "Défi de la tour · la chasse aux pions",
-          size: 8, first: "w", solo: true, countMoves: true,
+          size: 8, first: "w", solo: true, mustCapture: true,
           sides: { w: "La tour", b: "Les pions" },
           turnText: { w: "À la tour de jouer" },
           stuck: "lose",
-          winText: { captureAll: { w: "La tour a capturé les cinq pions." } },
+          winText: {
+            captureAll: { w: "La tour a capturé tous les pions, un par coup. Bravo !" },
+            stuck: { w: "La tour ne peut plus capturer : il fallait prendre les pions dans un autre ordre." }
+          },
           variants: [
-            { name: "Défi 1", par: 5, setup: ["a1 wR", "a5 bP", "a6 bP", "f4 bP", "f6 bP", "f8 bP"] },
-            { name: "Défi 2", par: 6, setup: ["a1 wR", "c5 bP", "e6 bP", "f3 bP", "f5 bP", "f6 bP"] },
-            { name: "Défi 3", par: 7, setup: ["a1 wR", "b7 bP", "c1 bP", "c2 bP", "c4 bP", "e2 bP"] }
+            { name: "Défi 1", setup: ["e5 wR", "d7 bP", "g7 bP", "b5 bP", "g5 bP", "d3 bP"] },
+            { name: "Défi 2", setup: ["d3 wR", "c8 bP", "c3 bP", "h3 bP", "c1 bP", "g1 bP"] },
+            { name: "Défi 3", setup: ["c3 wR", "a7 bP", "a3 bP", "d3 bP", "f3 bP", "h3 bP"] },
+            { name: "Défi 4 · six pions", setup: ["e3 wR", "c8 bP", "h8 bP", "b3 bP", "d3 bP", "h3 bP", "h1 bP"] },
+            { name: "Défi 5 · sept pions", setup: ["e3 wR", "f7 bP", "h7 bP", "c5 bP", "e5 bP", "h5 bP", "h3 bP", "h1 bP"] }
           ],
           rules: [
-            "<b>Mise en place :</b> une tour en a1 et cinq pions noirs sur l'échiquier. Seule la tour joue, les pions ne bougent pas.",
-            "<b>La tour</b> se déplace en ligne droite, d'autant de cases qu'elle veut, sans sauter par-dessus un pion.",
-            "<b>But :</b> capturer les cinq pions en un minimum de coups."
+            "<b>Mise en place :</b> une tour au milieu des pions noirs. Seule la tour joue, les pions ne bougent pas.",
+            "<b>La tour</b> se déplace en ligne droite, sans sauter par-dessus un pion.",
+            "<b>Règle du défi :</b> la tour doit capturer un pion à chaque coup. Autant de coups que de pions.",
+            "<b>But :</b> capturer tous les pions. Un seul ordre fonctionne : réfléchis avant de jouer !"
           ]
         },
 
         defiFou: {
-          name: "Défi du fou · cinq pions en diagonale",
-          size: 8, first: "w", solo: true, countMoves: true,
+          name: "Défi du fou · la chasse aux pions",
+          size: 8, first: "w", solo: true, mustCapture: true,
           sides: { w: "Le fou", b: "Les pions" },
           turnText: { w: "Au fou de jouer" },
           stuck: "lose",
-          winText: { captureAll: { w: "Le fou a capturé les cinq pions." } },
+          winText: {
+            captureAll: { w: "Le fou a capturé tous les pions, un par coup. Bravo !" },
+            stuck: { w: "Le fou ne peut plus capturer : il fallait prendre les pions dans un autre ordre." }
+          },
           variants: [
-            { name: "Défi 1", par: 5, setup: ["c1 wB", "a3 bP", "a5 bP", "d8 bP", "e7 bP", "h4 bP"] },
-            { name: "Défi 2", par: 6, setup: ["c1 wB", "a1 bP", "a7 bP", "c3 bP", "c5 bP", "e3 bP"] },
-            { name: "Défi 3", par: 7, setup: ["c1 wB", "a1 bP", "b4 bP", "f6 bP", "g1 bP", "g5 bP"] }
+            { name: "Défi 1", setup: ["e4 wB", "g8 bP", "c6 bP", "c4 bP", "g2 bP", "f1 bP"] },
+            { name: "Défi 2", setup: ["d4 wB", "f8 bP", "c5 bP", "a3 bP", "c1 bP", "g1 bP"] },
+            { name: "Défi 3", setup: ["c6 wB", "a8 bP", "h7 bP", "a4 bP", "e4 bP", "c2 bP"] },
+            { name: "Défi 4 · six pions", setup: ["d5 wB", "e8 bP", "c6 bP", "h5 bP", "a4 bP", "e4 bP", "h1 bP"] },
+            { name: "Défi 5 · sept pions", setup: ["f5 wB", "e8 bP", "c6 bP", "g6 bP", "a4 bP", "e4 bP", "d1 bP", "h1 bP"] }
           ],
           rules: [
-            "<b>Mise en place :</b> un fou en c1 et cinq pions noirs, tous sur des cases de la couleur du fou. Seul le fou joue, les pions ne bougent pas.",
-            "<b>Le fou</b> se déplace en diagonale, d'autant de cases qu'il veut, sans sauter par-dessus un pion. Il reste toujours sur la même couleur de case.",
-            "<b>But :</b> capturer les cinq pions en un minimum de coups."
+            "<b>Mise en place :</b> un fou au milieu des pions noirs, tous sur des cases de sa couleur. Seul le fou joue, les pions ne bougent pas.",
+            "<b>Le fou</b> se déplace en diagonale, sans sauter par-dessus un pion.",
+            "<b>Règle du défi :</b> le fou doit capturer un pion à chaque coup. Autant de coups que de pions.",
+            "<b>But :</b> capturer tous les pions. Un seul ordre fonctionne : réfléchis avant de jouer !"
           ]
         },
 
@@ -1906,6 +1936,7 @@
       }
       // Restrictions propres à un mode : pas de prise, pas de case attaquée par un pion adverse.
       function modeLimits(list, c) {
+        if (mode.mustCapture) return list.filter(x => model[x]);      // défi « chaîne de prises » : chaque coup capture
         if (!mode.noCapture && !mode.avoidPawns) return list;
         const goal = mode.goals && mode.goals.target && mode.goals.target.square;
         return list.filter(x => {
@@ -2086,9 +2117,20 @@
         if (!applyAction(a)) { refresh(); if (refusal) toast(refusal, true); return false; }
         history.push(before);
         sel = null; selRes = null;
+        levelUp();
         refresh();
         emit("change", { action: a, captured });
         return true;
+      }
+      // Progression : le camp qui devait atteindre la dernière rangée a réussi, on enchaîne sur la variante suivante.
+      function levelUp() {
+        const nx = variant ? variant.next : undefined, r = mode.goals && mode.goals.reach;
+        if (game.phase !== "over" || nx === undefined || !r || !game.result || game.result.winner !== r.side) return;
+        const g = game, label = mode.variants[nx].name.split(" · ")[0].toLowerCase();
+        game.result = { winner: game.result.winner, reason: game.result.reason + " " + (variant.nextText || "On passe au " + label + " !"), up: true };
+        setTimeout(() => {                         // le temps de savourer la victoire ; annulé si la partie a changé entre-temps
+          if (game === g && mayControl()) setMode(modeId, nx);
+        }, 2800);
       }
       // Toutes les actions permises pour le camp au trait.
       function legalActions() {
