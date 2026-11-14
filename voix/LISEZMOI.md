@@ -42,12 +42,13 @@ Conseils d'enregistrement (Audacity) : mono, 44 100 Hz, export MP3 128 kbit/s ; 
 | `niveau-suivant-1.mp3` | Bien joué ! On corse un peu : niveau suivant. | Sanglier : le sanglier s'est échappé, on passe au niveau suivant |
 | `niveau-suivant-2.mp3` | Tu t'es échappé ! Attention, j'appelle du renfort. |  |
 | `astuce-pions.mp3` | Astuce : un pion tout seul se fait prendre, avance-les ensemble. | Début de partie : Bataille de pions |
+| `astuce-fous.mp3` | Astuce : un pion gardé par son voisin, le fou n'ose pas le prendre. | Début de partie : Les pions contre les fous |
 | `astuce-opposition.mp3` | Astuce : mets ton roi juste en face du mien, avec une case entre nous. | Début de partie : Duel des rois |
 | `astuce-dalton.mp3` | Astuce : des pions qui se protègent avancent ensemble. | Début de partie : Lucky Luke contre les Dalton |
 | `astuce-loup.mp3` | Astuce : un mouton capture en diagonale, même le loup. | Début de partie : Loup dans la bergerie |
 | `astuce-sanglier.mp3` | Astuce : regarde les diagonales des chasseurs avant de sauter. | Début de partie : Sanglier contre chasseur |
 | `astuce-mousquetaires.mp3` | Astuce : avant de poser une pièce, vérifie qu'elle ne peut pas être prise. | Début de partie : Les 4 Mousquetaires |
 
-40 répliques. Les répliques de routine (« Je réfléchis », « À toi », « Je pose une pièce ») ne sont dites qu'une fois sur trois pour ne pas lasser.
+41 répliques. Les répliques de routine (« Je réfléchis », « À toi », « Je pose une pièce ») ne sont dites qu'une fois sur trois pour ne pas lasser.
 
 Un bouton « Voix » sur la carte de Mad permet de couper le son.
