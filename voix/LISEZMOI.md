@@ -29,6 +29,9 @@ Conseils d'enregistrement (Audacity) : mono, 44 100 Hz, export MP3 128 kbit/s ; 
 | `tu-gagnes-1.mp3` | Bravo, tu m'as battu ! | L'enfant a gagné |
 | `tu-gagnes-2.mp3` | Bien joué, c'est toi le plus fort aujourd'hui. |  |
 | `nulle-1.mp3` | Partie nulle. On remet ça ? | Partie nulle |
+| `pat-1.mp3` | Pat ! Mon roi n'est pas en échec, mais il ne peut plus bouger : partie nulle. Tu y étais presque. | Exercices de mat : pat |
+| `mat-1.mp3` | Échec et mat ! Bien joué. | Exercices de mat : l'enfant a fait mat |
+| `mat-2.mp3` | Mat ! Mon roi n'a plus aucune case. Bravo ! |  |
 | `je-pose-1.mp3` | Je pose une pièce. | Mad vient de poser une pièce (Mousquetaires, une fois sur trois) |
 | `je-pose-2.mp3` | Voilà, à toi de poser. |  |
 | `indice-1.mp3` | Essaie par ici. | Défis : Mad montre un indice |
@@ -48,7 +51,9 @@ Conseils d'enregistrement (Audacity) : mono, 44 100 Hz, export MP3 128 kbit/s ; 
 | `astuce-loup.mp3` | Astuce : un mouton capture en diagonale, même le loup. | Début de partie : Loup dans la bergerie |
 | `astuce-sanglier.mp3` | Astuce : regarde les diagonales des chasseurs avant de sauter. | Début de partie : Sanglier contre chasseur |
 | `astuce-mousquetaires.mp3` | Astuce : avant de poser une pièce, vérifie qu'elle ne peut pas être prise. | Début de partie : Les 4 Mousquetaires |
+| `astuce-mat.mp3` | Astuce : attention au pat ! Tant que tu ne fais pas mat, laisse toujours une case à mon roi. | Début de partie : Exercices de mat |
+| `astuce-classique.mp3` | Astuce : sors tes pièces, mets ton roi à l'abri avec le roque, et occupe le centre. | Début de partie : Partie classique |
 
-41 répliques. Les répliques de routine (« Je réfléchis », « À toi », « Je pose une pièce ») ne sont dites qu'une fois sur trois pour ne pas lasser.
+46 répliques. Les répliques de routine (« Je réfléchis », « À toi », « Je pose une pièce ») ne sont dites qu'une fois sur trois pour ne pas lasser.
 
 Un bouton « Voix » sur la carte de Mad permet de couper le son.
