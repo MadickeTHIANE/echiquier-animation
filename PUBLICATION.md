@@ -12,6 +12,7 @@ Pour publier la nouveauté de la semaine, il suffit d'avancer `main` sur la bran
 |---|---|
 | `publication/00-socle` | Rien de nouveau : seule l'animation libre est visible |
 | `publication/01-mode-bataille-de-pions` | Bataille de pions |
+| `publication/01b-mode-pions-contre-fous` | Les pions contre les fous |
 | `publication/02-mode-lucky-luke` | Lucky Luke contre les Dalton |
 | `publication/03-mode-defi-tour` | Défi de la tour |
 | `publication/04-mode-defi-fou` | Défi du fou |

@@ -16,6 +16,7 @@
       modes: [
         "free",
         "pions",
+        "fous",
         "dalton",
         "defiTour",
         "defiFou",
@@ -1574,6 +1575,26 @@
           source: "« Apprendre facilement les échecs à votre enfant » V2, jeu « bataille de pion »."
         },
 
+        fous: {
+          name: "Les pions contre les fous",
+          size: 8, first: "w",
+          sides: { w: "Les pions", b: "Les fous" },
+          turnText: { w: "Aux pions de jouer", b: "Aux fous de jouer" },
+          goals: { reach: { side: "w", type: "P" } }, stuck: "lose",
+          winText: {
+            reach: "Un pion a atteint la 8e rangée : les pions gagnent.",
+            captureAll: { b: "Les fous ont capturé tous les pions.", w: "Les pions ont capturé les deux fous." },
+            stuck: { w: "Les pions sont bloqués : les fous gagnent.", b: "Les fous sont bloqués : les pions gagnent." }
+          },
+          setup: ["b2 wP", "c2 wP", "d2 wP", "e2 wP", "f2 wP", "g2 wP", "d8 bB", "e8 bB"],
+          rules: [
+            "<b>Mise en place :</b> six pions blancs de b2 à g2, deux fous noirs en d8 et e8. Les pions commencent.",
+            "<b>Les pions</b> avancent d'une case tout droit (de deux cases, s'ils le veulent, pour leur premier coup) et capturent en diagonale. Ils gagnent si l'un d'eux atteint la 8e rangée.",
+            "<b>Les fous</b> se déplacent en diagonale. Ils gagnent s'ils capturent les six pions, ou si plus aucun pion ne peut avancer.",
+            "<b>Attention :</b> un pion peut capturer un fou qui se pose devant lui, en diagonale."
+          ]
+        },
+
         mousquetaires: {
           name: "Les 4 Mousquetaires · échiquier de 16 cases",
           size: 4, first: "w",
@@ -1794,7 +1815,7 @@
           ]
         }
       };
-      const MODE_ORDER = ["free", "pions", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument"];
+      const MODE_ORDER = ["free", "pions", "fous", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument"];
 
       // Ce que cet appareil a le droit de voir (liste publiée, ou accès complet de l'animateur).
       const ACCES = window.ECHIQUIER_ACCES || { complet: true, modes: null, niveauxMousquetaires: 99, enLigne: true, charte: true, bot: true };
