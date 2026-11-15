@@ -1237,6 +1237,13 @@
       flex: 1 1 auto;
     }
 
+    .pz-bar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0 0;
+    }
+
     .promo {
       position: absolute;
       inset: 0;
@@ -1503,6 +1510,10 @@
     </div>
 
     <div class="status gameOnly" id="status" aria-live="polite"></div>
+    <div class="pz-bar hidden" id="pzBar">
+      <button class="btn" id="pzHint" type="button">Indice</button>
+      <button class="btn primary" id="pzNext" type="button">Problème suivant</button>
+    </div>
 
     <div class="spare" id="spareTop"></div>
 
@@ -1570,6 +1581,7 @@
 
   <div class="toast" id="toast"></div>
 
+  <script src="cahier.js"></script>
   <script>
     (function () {
       "use strict";
@@ -1905,7 +1917,22 @@
           "<b>Partie nulle :</b> pat, même position répétée trois fois, 50 coups sans prise ni poussée de pion, ou plus assez de pièces pour mater."
         ]
       };
-      const MODE_ORDER = ["free", "pions", "fous", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument", "mat", "classique"];
+      // Cahier de problèmes : un problème par variante, dans l'ordre du cahier (données dans cahier.js).
+      const CAHIER = Array.isArray(window.CAHIER_PROBLEMES) ? window.CAHIER_PROBLEMES : [];
+      if (CAHIER.length) MODES.problemes = {
+        name: "Cahier de problèmes",
+        size: 8, first: "w", chess: true, royal: true, puzzle: true, stuck: "pat",
+        sides: { w: "Blancs", b: "Noirs" },
+        turnText: { w: "Aux Blancs de jouer : trouve le meilleur coup", b: "Aux Noirs de jouer : trouve le meilleur coup" },
+        variants: CAHIER.map(p => ({ name: "Problème " + p.n + " · " + p.elo + " Elo", fen: p.fen, lines: p.lines, theme: p.theme })),
+        rules: [
+          "<b>But :</b> trouver le meilleur coup pour le camp qui doit jouer. Quand la suite compte plusieurs coups, l'adversaire répond tout seul.",
+          "<b>Mauvais coup :</b> la pièce revient à sa place, on peut réessayer autant de fois que l'on veut.",
+          "<b>Indice :</b> un premier appui montre la pièce à jouer, un deuxième montre où elle va.",
+          "<b>Problème suivant :</b> le bouton s'active dès que le problème est résolu. Les problèmes sont rangés du plus facile au plus difficile."
+        ]
+      };
+      const MODE_ORDER = ["free", "pions", "fous", "mousquetaires", "loup", "sanglier", "dalton", "opposition", "defiTour", "defiFou", "jument", "mat", "classique", "problemes"];
 
       // Ce que cet appareil a le droit de voir (liste publiée, ou accès complet de l'animateur).
       const ACCES = window.ECHIQUIER_ACCES || { complet: true, modes: null, niveauxMousquetaires: 99, personnages: true, enLigne: true, charte: true, bot: true };
@@ -2284,11 +2311,19 @@
 
       // Every change to a refereed game goes through here: one small serialisable action.
       // (This is also the hook the online mode uses: send the action, replay it on the other side.)
-      function doAction(a) {
+      function doAction(a, auto) {
         if (!refereed() || game.phase === "over") return false;
+        if (mode.puzzle && game.pz && !auto && game.turn !== game.pz.side) return false;     // la réponse de l'adversaire arrive
         const before = snapshot();
         const captured = a.t === "move" && !!model[a.to];
         if (!applyAction(a)) { refresh(); if (refusal) toast(refusal, true); return false; }
+        if (mode.puzzle && game.pz && !pzAdvance(a, auto)) {     // ce n'est pas le coup attendu : on remet la position
+          restore(before);
+          game.note = (game.note ? game.note + " " : "") + "Ce n'est pas le bon coup. Essaie encore, ou demande un indice.";
+          sel = null; selRes = null;
+          refresh();
+          return false;
+        }
         history.push(before);
         sel = null; selRes = null;
         levelUp();
@@ -2296,6 +2331,68 @@
         emit("change", { action: a, captured });
         return true;
       }
+      /* ---------- Cahier de problèmes ---------- */
+      const PZ_KEY = "echecs-mad-problemes";
+      let pzStage = 0;                                 // indice : 0 rien, 1 pièce montrée, 2 flèche montrée
+      // Nombre de problèmes déjà résolus = rang du premier problème encore à faire.
+      function pzProgress() { try { return Math.max(0, Number(localStorage.getItem(PZ_KEY)) || 0); } catch (_) { return 0; } }
+      function readFen(fen) {
+        const [rows, turn, c, e] = fen.split(" "), m = {};
+        rows.split("/").forEach((row, i) => {
+          let f = 0;
+          for (const ch of row) {
+            if (ch >= "1" && ch <= "8") { f += Number(ch); continue; }
+            m[mkSq(f, 8 - i)] = { kind: "std", code: (ch === ch.toUpperCase() ? "w" : "b") + ch.toUpperCase() };
+            f++;
+          }
+        });
+        return { model: m, turn: turn === "b" ? "b" : "w", castle: c && c !== "-" ? c : "", ep: e && e !== "-" ? e : null };
+      }
+      const pzMove = a => a.from + a.to + (a.promo && a.promo !== "Q" ? a.promo.toLowerCase() : "");
+      const pzExpected = () => variant.lines[game.pz.alive[0]][game.pz.step];
+      // Le coup vient d'être joué sur l'échiquier : est-il celui du corrigé ? Si oui, on avance dans la suite.
+      function pzAdvance(a, auto) {
+        const z = game.pz, lines = variant.lines, played = pzMove(a);
+        const mate = game.phase === "over" && game.result.winner === z.side;
+        const alive = z.alive.filter(i => lines[i][z.step] === played);
+        if (!alive.length && !(mate && !auto)) return false;        // un mat immédiat est toujours accepté
+        shapes = shapes.filter(s => !s.hint); pzStage = 0;
+        if (alive.length) z.alive = alive;
+        z.step++;
+        const done = mate || !alive.length || z.step >= lines[z.alive[0]].length;
+        if (done) {
+          if (game.phase !== "over") end(z.side, "C'est la bonne suite : " + variant.theme + ".");
+          try { if (variantIdx + 1 > pzProgress()) localStorage.setItem(PZ_KEY, String(variantIdx + 1)); } catch (_) { }
+        } else if (!auto) {
+          const g = game, reply = lines[z.alive[0]][z.step];
+          setTimeout(() => {                           // l'adversaire répond, après un court instant
+            if (game === g && game.phase !== "over") doAction({ t: "move", from: reply.slice(0, 2), to: reply.slice(2, 4) }, true);
+          }, 650);
+        }
+        return true;
+      }
+      function pzHint() {
+        if (!mode.puzzle || !game || !game.pz || game.phase === "over" || game.turn !== game.pz.side) return;
+        const mv = pzExpected(), from = mv.slice(0, 2), to = mv.slice(2, 4);
+        shapes = shapes.filter(s => !s.hint);
+        pzStage = Math.min(2, pzStage + 1);
+        shapes.push({ type: "hl", square: from, color: "blue", hint: true });
+        if (pzStage === 2) shapes.push({ type: "arrow", from, to, color: "blue", hint: true });
+        refresh();
+      }
+      function pzNext() {
+        if (mode.puzzle && variantIdx + 1 < mode.variants.length && (variantIdx < pzProgress() || ACCES.complet)) setMode(modeId, variantIdx + 1);
+      }
+      function renderPuzzleBar() {
+        if (!mode.puzzle || !game || !game.pz) return;
+        const solved = game.phase === "over" && game.result.winner === game.pz.side, last = variantIdx + 1 >= mode.variants.length;
+        $("pzHint").disabled = game.phase === "over" || game.turn !== game.pz.side;
+        $("pzHint").textContent = pzStage === 1 ? "Indice : où va-t-elle ?" : "Indice";
+        $("pzNext").disabled = last || !(solved || variantIdx < pzProgress() || ACCES.complet);
+        $("pzNext").textContent = last && solved ? "Cahier terminé, bravo !" : "Problème suivant";
+        if (!ACCES.complet) [...variantSel.options].forEach((o, i) => { o.disabled = i > pzProgress(); });
+      }
+
       // Progression : le camp qui devait atteindre la dernière rangée a réussi, on enchaîne sur la variante suivante.
       function levelUp() {
         const nx = variant ? variant.next : undefined, r = mode.goals && mode.goals.reach;
@@ -2342,14 +2439,20 @@
           model[sq] = { kind: "std", code };
           if (img) model[sq].skin = PIECES_DIR + "/" + img;
         }
+        const pz = mode.puzzle && variant ? readFen(variant.fen) : null;
+        if (pz) { model = pz.model; orientation = pz.turn === "b" ? "black" : "white"; pzStage = 0; }
         game = {
-          referee: refereeOn && !mode.refereeOff,
+          referee: (refereeOn || !!mode.puzzle) && !mode.refereeOff,
           phase: rule("placement") ? "place" : "move",
           turn: mode.first || "w",
           reserve: { w: (rule("placement") || []).slice(), b: (rule("placement") || []).slice() },
           quiet: 0, moves: 0, last: null, result: null, note: "",
           castle: mode.castle ? "KQkq" : "", ep: null
         };
+        if (pz) {                                    // problème : le camp au trait cherche, l'autre répond tout seul
+          game.turn = pz.turn; game.castle = pz.castle; game.ep = pz.ep;
+          game.pz = { side: pz.turn, step: 0, alive: variant.lines.map((_, i) => i) };
+        }
         if (game.referee && game.phase === "move") afterTurnChange();
         if (game.referee && mode.repetition && game.phase !== "over") countPosition();
         refresh();
@@ -2377,11 +2480,13 @@
         if (shown) {
           shown.forEach((v, i) => {
             const o = document.createElement("option"); o.value = i; o.textContent = v.name; variantSel.appendChild(o);
+            if (mode.puzzle && !ACCES.complet && i > pzProgress()) o.disabled = true;      // pas encore atteint
           });
           variantSel.value = String(mode.variants.indexOf(variant));
         }
         variantSel.classList.toggle("hidden", !shown || shown.length < 2);
-        $("refWrap").classList.toggle("hidden", modeId === "free" || !!mode.refereeOff);
+        $("refWrap").classList.toggle("hidden", modeId === "free" || !!mode.refereeOff || !!mode.puzzle);
+        $("pzBar").classList.toggle("hidden", !mode.puzzle);
         const setupLines = (variant && variant.setup) || mode.setup || [];
         const hasSkins = setupLines.some(line => line.split(" ").length > 2);
         $("skinWrap").classList.toggle("hidden", modeId === "free" || !hasSkins || !ACCES.personnages);
@@ -2631,7 +2736,7 @@
         let main = "", meta = [];
         if (game.phase === "over") {
           const w = game.result.winner;
-          main = w && mode.sides[w] ? `Victoire : ${mode.sides[w]}` : "Partie nulle";
+          main = mode.puzzle && game.pz && w === game.pz.side ? "Problème résolu !" : w && mode.sides[w] ? `Victoire : ${mode.sides[w]}` : "Partie nulle";
           meta.push(game.result.reason);
         } else if (game.phase === "place") {
           main = dot(game.turn) + mode.placeText[game.turn];
@@ -2649,6 +2754,7 @@
         if (game.note) meta.push(game.note);
         meta.push(...extras);
         statusEl.innerHTML = `<span class="main">${main}</span>` + meta.map(m => `<span class="meta">${esc(m)}</span>`).join("");
+        renderPuzzleBar();
       }
 
       // Top/bottom piece rows: full palettes when playing freely, the pieces left to place in a refereed placement.
@@ -3140,6 +3246,8 @@
       function undo() {
         if (!refereed() || !history.length) return false;
         restore(history.pop());
+        if (mode.puzzle && game.pz && game.turn !== game.pz.side && history.length) restore(history.pop());   // on revient au coup de l'élève
+        pzStage = 0;
         sel = null; selRes = null; shapes = [];
         refresh();
         emit("change", { undo: true });
@@ -3152,6 +3260,8 @@
       });
       modeSel.addEventListener("change", () => setMode(modeSel.value, 0));
       variantSel.addEventListener("change", () => setMode(modeId, Number(variantSel.value)));
+      $("pzHint").addEventListener("click", pzHint);
+      $("pzNext").addEventListener("click", pzNext);
       $("chkReferee").addEventListener("change", e => { refereeOn = e.target.checked; if (game) newGame(); });
       $("chkSkins").addEventListener("change", e => { showSkins = e.target.checked; renderPieces(); });
 
