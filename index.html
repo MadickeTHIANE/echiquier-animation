@@ -2322,7 +2322,9 @@
         if (!applyAction(a)) { refresh(); if (refusal) toast(refusal, true); return false; }
         if (mode.puzzle && game.pz && !pzAdvance(a, auto)) {     // ce n'est pas le coup attendu : on remet la position
           restore(before);
-          game.note = (game.note ? game.note + " " : "") + "Ce n'est pas le bon coup. Essaie encore, ou demande un indice.";
+          const wrong = "Ce n'est pas le bon coup. Essaie encore, ou demande un indice.";
+          const kept = (game.note || "").split(wrong).join("").trim();      // le message ne s'ajoute qu'une fois
+          game.note = (kept ? kept + " " : "") + wrong;
           sel = null; selRes = null;
           refresh();
           return false;
