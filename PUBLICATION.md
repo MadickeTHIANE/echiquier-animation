@@ -25,10 +25,10 @@ Pour publier la nouveauté de la semaine, il suffit d'avancer `main` sur la bran
 | `etape/12-16-cases-pion` | Les 4 Mousquetaires, niveau 2 · le pion |
 | `etape/13-16-cases-roi` | Les 4 Mousquetaires, niveau 3 · le roi |
 | `etape/14-bot-mad` | Mad, le bot |
-| `etape/15-jouer-en-ligne` | Jouer en ligne |
-| `etape/16-charte-graphique` | Mode sombre et police Poppins |
-| `etape/17-exercices-de-mat` | Exercices de mat contre Mad |
-| `etape/18-partie-classique` | Partie classique, à deux ou contre Mad |
+| `etape/15-exercices-de-mat` | Exercices de mat contre Mad |
+| `etape/16-partie-classique` | Partie classique, à deux ou contre Mad |
+| `etape/17-charte-graphique` | Mode sombre et police Poppins (pas encore programmé) |
+| `etape/18-jouer-en-ligne` | Jouer en ligne (pas encore programmé, à tester) |
 
 Exemple, pour publier la bataille de pions :
 
@@ -37,6 +37,9 @@ git checkout main
 git merge --ff-only origin/etape/01-bataille-de-pions
 git push
 ```
+
+Calendrier : un reel par jeudi, de la bataille de pions (3 décembre 2026) à la partie classique (18 mars 2027).
+Un script Google Apps Script avance `main` chaque jeudi à 10 h et prévient sur Discord ; la commande ci-dessus sert de secours.
 
 Pour publier dans un autre ordre, modifier directement la liste dans `index.html`.
 
