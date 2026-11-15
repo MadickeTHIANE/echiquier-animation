@@ -361,7 +361,7 @@
     return { pieces, turn: g.turn, castle: g.castle || "", ep: g.ep || null, half: g.quiet || 0 };
   }
   // Livre d'ouvertures facultatif (livre/mad.json) : les coups que Madické joue vraiment, position par position.
-  // { "<pièces> <trait> <roques> <en passant>": [["e2e4", 12], ["d2d4", 3]], … }
+  // { "<pièces> <trait> <roques>": [["e2e4", 12], ["d2d4", 3]], … }
   let book = null;
   fetch("livre/mad.json", { cache: "no-cache" }).then(r => (r.ok ? r.json() : null)).then(j => { if (j && typeof j === "object") book = j; }).catch(() => { });
   function bookKey() {
@@ -377,7 +377,7 @@
       }
       rows.push(row + (gap || ""));
     }
-    return rows.join("/") + " " + p.turn + " " + (p.castle || "-") + " " + (p.ep || "-");
+    return rows.join("/") + " " + p.turn + " " + (p.castle || "-");
   }
   function bookMove(actions) {
     const lines = book && book[bookKey()];
@@ -404,11 +404,11 @@
   }
   function chessAction(levelId, actions) {
     const L = CHESS_LEVELS[levelId] || CHESS_LEVELS[2];
-    if (L.blunder && Math.random() < L.blunder) return pick(actions);
-    if (E.mode().castle && levelId >= 2) {             // partie classique : d'abord le répertoire de Madické
+    if (E.mode().castle) {                             // partie classique : d'abord le répertoire de Madické
       const b = bookMove(actions);
       if (b) return b;
     }
+    if (L.blunder && Math.random() < L.blunder) return pick(actions);
     const moves = engineMoves(L);
     if (!moves || !moves.length) return null;
     moves.forEach(m => { m.v = m.score + (Math.random() * 2 - 1) * L.noise; });
