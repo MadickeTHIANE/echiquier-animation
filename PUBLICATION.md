@@ -29,6 +29,7 @@ Pour publier la nouveauté de la semaine, il suffit d'avancer `main` sur la bran
 | `etape/16-partie-classique` | Partie classique, à deux ou contre Mad |
 | `etape/17-charte-graphique` | Mode sombre et police Poppins (pas encore programmé) |
 | `etape/18-jouer-en-ligne` | Jouer en ligne (pas encore programmé, à tester) |
+| `etape/19-cahier-de-problemes` | Cahier de problèmes (pas encore programmé) |
 
 Exemple, pour publier la bataille de pions :
 

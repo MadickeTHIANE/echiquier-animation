@@ -71,7 +71,7 @@
   // Mad peut-il jouer dans la situation actuelle ?
   function available() {
     const st = E.state();
-    return st.modeId !== "free" && !!game() && !E.mode().solo && !online();
+    return st.modeId !== "free" && !!game() && !E.mode().solo && !E.mode().puzzle && !online();
   }
   const active = () => bot.level > 0 && available();
   const botTurn = () => { const g = game(); return active() && g.phase !== "over" && g.turn === bot.side; };
@@ -684,7 +684,7 @@
     if (!ctl) return;
     const st = E.state(), m = E.mode();
     const solo = !!m.solo && !!game();
-    ctl.classList.toggle("hidden", st.modeId === "free" || !game() || online());
+    ctl.classList.toggle("hidden", st.modeId === "free" || !game() || online() || !!m.puzzle);
     if (ctl.classList.contains("hidden")) { ctl.innerHTML = ""; return; }
     if (solo) {
       ctl.innerHTML = `<button class="btn" id="botHint" type="button">Un indice de Mad</button>`;
