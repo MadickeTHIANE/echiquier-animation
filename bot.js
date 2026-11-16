@@ -21,7 +21,7 @@
    Une expression absente est remplacée par mad-neutre.png, puis par un simple « M ».
 
    Voix de Mad : des enregistrements mp3 facultatifs dans le dossier voix/, déclarés
-   dans voix/liste.txt (un nom de fichier par ligne). Voir voix/LISEZMOI.md.
+   dans voix/liste.js. Voir voix/LISEZMOI.md.
    ===================================================================== */
 (function () {
   "use strict";
@@ -360,10 +360,9 @@
     for (const sq in model) if (model[sq].kind === "std") pieces[sq] = model[sq].code;
     return { pieces, turn: g.turn, castle: g.castle || "", ep: g.ep || null, half: g.quiet || 0 };
   }
-  // Livre d'ouvertures facultatif (livre/mad.json) : les coups que Madické joue vraiment, position par position.
+  // Livre d'ouvertures facultatif (livre/mad.js) : les coups que Madické joue vraiment, position par position.
   // { "<pièces> <trait> <roques>": [["e2e4", 12], ["d2d4", 3]], … }
-  let book = null;
-  fetch("livre/mad.json", { cache: "no-cache" }).then(r => (r.ok ? r.json() : null)).then(j => { if (j && typeof j === "object") book = j; }).catch(() => { });
+  const book = window.MAD_LIVRE && typeof window.MAD_LIVRE === "object" ? window.MAD_LIVRE : null;
   function bookKey() {
     const p = enginePosition();
     let rows = [];
@@ -550,10 +549,8 @@
   const CHATTER = { thinking: 1, yourTurn: 1, place: 1 };     // répliques de routine : dites une fois sur trois seulement
   const voices = new Set();
   let playing = null;
-  fetch("voix/liste.txt", { cache: "no-cache" }).then(r => (r.ok ? r.text() : "")).then(txt => {
-    txt.split(/\r?\n/).map(l => l.trim()).filter(l => /^[a-z0-9-]+\.mp3$/.test(l)).forEach(l => voices.add(l.slice(0, -4)));
-    if (voices.size) renderCard();
-  }).catch(() => { });
+  // La liste vient de voix/liste.js (un simple fichier de script, pour que la voix marche aussi en ouvrant index.html directement).
+  (Array.isArray(window.MAD_VOIX) ? window.MAD_VOIX : []).forEach(n => { if (/^[a-z0-9-]+$/.test(n)) voices.add(n); });
   function hush() { if (playing) { playing.pause(); playing = null; } }
   function speak(ids) {
     hush();
