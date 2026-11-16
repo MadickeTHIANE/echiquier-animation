@@ -1,7 +1,7 @@
 # La voix de Mad
 
-Enregistrements facultatifs. Un fichier mp3 par réplique, déposé dans ce dossier, puis déclaré dans `liste.txt` (un nom de fichier par ligne).
-Tant qu'un fichier n'est pas dans `liste.txt`, la réplique reste simplement écrite à l'écran.
+Enregistrements facultatifs. Un fichier mp3 par réplique, déposé dans ce dossier, puis déclaré dans `liste.js` (son nom, sans « .mp3 »).
+Tant qu'un fichier n'est pas dans `liste.js`, la réplique reste simplement écrite à l'écran.
 
 Conseils d'enregistrement (Audacity) : mono, 44 100 Hz, export MP3 128 kbit/s ; couper les silences au début et à la fin ; même distance du micro et même volume pour toutes les répliques (Effet > Normaliser à -1 dB).
 
