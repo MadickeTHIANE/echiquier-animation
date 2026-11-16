@@ -551,28 +551,38 @@
   let playing = null;
   // La liste vient de voix/liste.js (un simple fichier de script, pour que la voix marche aussi en ouvrant index.html directement).
   (Array.isArray(window.MAD_VOIX) ? window.MAD_VOIX : []).forEach(n => { if (/^[a-z0-9-]+$/.test(n)) voices.add(n); });
-  function hush() { if (playing) { playing.pause(); playing = null; } }
-  function speak(ids) {
-    hush();
-    const queue = ids.filter(id => voices.has(id));
-    if (bot.muted || !queue.length) return;
+  // Une réplique commencée va toujours jusqu'au bout : la suivante attend son tour (une seule en attente,
+  // la plus récente), et les répliques de routine se taisent tant que Mad parle encore.
+  let waiting = null;
+  function hush() { waiting = null; if (playing) { playing.pause(); playing = null; } }
+  function playVoice(queue) {
     const next = () => {
       const id = queue.shift();
-      if (!id) { playing = null; return; }
+      if (!id) {
+        playing = null;
+        if (waiting) { const w = waiting; waiting = null; playVoice(w); }
+        return;
+      }
       const a = new Audio("voix/" + id + ".mp3");
       playing = a;
-      a.onended = () => { if (playing === a) next(); };
+      a.onended = a.onerror = () => { if (playing === a) next(); };
       const p = a.play();
-      if (p && p.catch) p.catch(() => { if (playing === a) playing = null; });     // son refusé par le navigateur : on se tait
+      if (p && p.catch) p.catch(() => { if (playing === a) { playing = null; waiting = null; } });     // son refusé par le navigateur : on se tait
     };
     next();
+  }
+  function speak(ids) {
+    const queue = ids.filter(id => voices.has(id));
+    if (bot.muted || !queue.length) return;
+    if (playing) { waiting = queue; return; }
+    playVoice(queue);
   }
   function say(kind, extra) {
     const lines = SAY[kind] || [""], i = Math.floor(Math.random() * lines.length);
     bot.line = lines[i] + (extra ? " " + extra : "");
     bot.mood = MOOD[kind] || "neutre";
     renderCard();
-    if (CHATTER[kind] && Math.random() > 1 / 3) { hush(); return; }
+    if (CHATTER[kind] && (playing || Math.random() > 1 / 3)) return;
     const ids = [VOICE[kind] + "-" + (i + 1)];
     if (extra) ids.push("astuce-" + E.state().modeId);
     speak(ids);
